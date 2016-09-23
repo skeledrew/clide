@@ -1,0 +1,111 @@
+#! /bin/bash
+
+_ver="0.1" # version
+
+echo "Prepare to have your mind blown!"
+
+echo -e "\nInstalling anything that's missing...\n"
+_check=`which git`
+if [ ! -e $_check ] ; then  sudo apt-get install -y git ; fi
+_check=`which pip3` # also checks and installs python3, wheel and more
+if [ ! -e $_check ] ; then sudo apt-get install -y python3-pip ; fi
+_check=`which virtualenv`
+if [ ! -e $_check ] ; then pip3 install virtualenv ; fi
+#_check=`which couchdb` # NoSQL DBMS; pulling this out of the core
+#if [ ! -e $_check ] ; then sudo apt install -y couchdb ; fi
+
+echo -e "\nCreating folder structure...\n"
+virtualenv tool_builder  # TODO: should get name as arg and check existence
+cp $0 tool_builder
+cd tool_builder
+source bin/activate
+_check=`which hy`
+if [ ! -e $_check ] ; then pip3 install hy ; fi
+
+echo -e "\nCreating license information...\n"
+echo -e ";;This file is part of Tool Builder\n" > agpl-frag.txt
+echo -e ";;Tool Builder v$_ver - Build any software tool with Hy-interpreted pseudocode " > agpl-frag.txt
+echo -e "" >> agpl-frag.txt
+echo -e ";;@author Andrew Phillips  " >> agpl-frag.txt
+echo -e ";;@copyright 2016 Andrew Phillips <skeledrew@gmail.com>" >> agpl-frag.txt
+echo -e "" >> agpl-frag.txt
+echo -e ";;Tool Builder is free software; you can redistribute it and/or" >> agpl-frag.txt
+echo -e ";;modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE" >> agpl-frag.txt
+echo -e ";;License as published by the Free Software Foundation; either" >> agpl-frag.txt
+echo -e ";;version 3 of the License, or any later version." >> agpl-frag.txt
+echo -e "" >> agpl-frag.txt
+echo -e ";;Tool Builder is distributed in the hope that it will be useful," >> agpl-frag.txt
+echo -e ";;but WITHOUT ANY WARRANTY; without even the implied warranty of" >> agpl-frag.txt
+echo -e ";;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the" >> agpl-frag.txt
+echo -e ";;GNU AFFERO GENERAL PUBLIC LICENSE for more details." >> agpl-frag.txt
+echo -e "" >> agpl-frag.txt
+echo -e ";;You should have received a copy of the GNU Affero General Public" >> agpl-frag.txt
+echo -e ";;License along with Tool Builder.  If not, see <http://www.gnu.org/licenses/>." >> agpl-frag.txt
+curl https://www.gnu.org/licenses/agpl-3.0.txt > LICENSE.txt
+cp agpl-frag.txt main.hy
+cp agpl-frag.txt loader.hy
+cp agpl-frag.txt repl.hy
+cp agpl-frag.txt diet.hy
+rm agpl-frag.txt
+
+echo -e "\nCreating base tool builder...\n"
+echo -e "#! /bin/sh\n\nhy main.hy" > awaken
+chmod +x awaken
+echo -e ";; Created with tool_builder version $_ver\n\n" >> main.hy
+echo -e "(import [loader :as -loader] [repl :as -repl])\n" >> main.hy
+echo -e "(.feed -repl)" >> main.hy
+echo -e "(import importlib)\n" >> loader.hy
+echo -e "(defn load [mod]" >> loader.hy
+echo -e "      (try" >> loader.hy
+echo -e "           (.reload importlib mod)" >> loader.hy
+echo -e "           (catch [e Exception]" >> loader.hy
+echo -e "                  (.import-module importlib mod))))" >> loader.hy
+echo -e "\n\n;; User definitions\n" >> loader.hy
+echo -e ';; TB history\n\n(print "Eating all the leftovers...")' >> diet.hy
+echo -e ';; TB REPL\n' >> repl.hy
+echo -e '(import [loader :as -loader] io)\n' >> repl.hy
+echo -e '(setv -dish "<=: ")    ' >> repl.hy
+echo -e '(setv -food "error... :(")     ' >> repl.hy  # for debugging
+echo -e '(setv -diet "diet.hy")  ' >> repl.hy
+echo -e '(setv -nutri "nutri")   ' >> repl.hy
+echo -e '    ' >> repl.hy
+echo -e '(defn eat []  ; BUG: input not registered  ' >> repl.hy
+echo -e '      (setv -food     ' >> repl.hy
+echo -e '            (input -dish)))     ' >> repl.hy
+echo -e '   ' >> repl.hy
+echo -e '(defn digest [food]    ' >> repl.hy
+echo -e '      (do (with [[f (open -diet "a")]]    ' >> repl.hy
+echo -e '                (.write f (+ food "\n")))  ' >> repl.hy
+echo -e '          (if (= ":=>" (slice food 0 3))   ' >> repl.hy
+echo -e '              (swallow (slice food 4))    ' >> repl.hy
+echo -e '              (cook food))))    ' >> repl.hy
+echo -e '       ' >> repl.hy
+echo -e '(defn feed []  ' >> repl.hy
+echo -e '      (do (while True (setv -food (input -dish)) ;(eat)     ' >> repl.hy
+echo -e '   (if (= -food "sleep-pills") (break))    ' >> repl.hy
+echo -e '   (digest -food))))   ' >> repl.hy
+echo -e '     ' >> repl.hy
+echo -e '(defn swallow [food]   ' >> repl.hy
+echo -e ';      (with [[f (open nutri "w")]]     ' >> repl.hy
+echo -e ';            (.write f food))    ' >> repl.hy
+echo -e ';      (.load -loader -nutri))   ' >> repl.hy
+echo -e '       (eval (apply read [] {"from_file" (.StringIO io food)})))     ' >> repl.hy
+echo -e '         ' >> repl.hy
+echo -e '(defn cook [food] (cond [(= (slice food 0 3) "ex ") (print food)] [True (print "I cannot cook this food...")])) ' >> repl.hy
+echo -e '         ' >> repl.hy
+echo -e '(defn prep [] (for [ingr (.split (. self food) " ")] (yield ingr)))    ' >> repl.hy
+echo -e '    ' >> repl.hy
+echo -e ';(defclass Ingreds []   ' >> repl.hy
+echo -e ';          [pos 0]    ' >> repl.hy
+echo -e ';          [[add (fn [self food] (setv (. self itms) (.split food " ")))]     ' >> repl.hy
+echo -e ';          [next (fn [self] (setv (. self pos) (inc (. self pos))))]   ' >> repl.hy
+echo -e ';          [get (fn [self] (get (. self itms) (. self pos)))]]) ' >> repl.hy
+
+echo -e "\nCreating Git repo and doing initial commit...\n"
+git init
+git add egg awaken *.hy
+git commit -m "tool_builder $_ver initialized"
+
+unset _check
+unset _ver
+echo -e '\ntool_builder is hatched! You can now "awaken" it...\n'
