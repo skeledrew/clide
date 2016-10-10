@@ -1,0 +1,20 @@
+#! /bin/sh
+
+# Run from within a cloned ClIDE folder to setup virtualenv
+
+if [ -e "repl.hy" && ! -e "bin/activate" ] ; then cp $0 .. && ../$0 && exit; fi
+
+if [ $1 == "cleanup" ] l then rm ../$0 && exit; fi
+mv clide clide1
+virtualenv clide
+mv clide1/* clide
+mv clide1/.git clide
+rm -rf clide1
+echo "include/" >> clide/.gitignore
+echo "bin/" >> clide/.gitignore
+echo "lib/" >> clide/.gitignore
+echo "pip-selfcheck.json/" >> clide/.gitignore
+
+echo "Virtualenv setup complete. Please enter the clide folder, switch"
+echo "to the env by running 'source bin/activate', then install 'hy' if"
+echo "it isn't already installed."
