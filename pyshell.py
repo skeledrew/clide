@@ -13,6 +13,18 @@ PyShell
 '''
 
 
-from common import *
+#from common import *
 
 
+def main():
+    while True:
+        cmd = input('<= ')
+        if cmd == 'goodbye': break
+
+        try:
+            exec(cmd)
+
+        except:
+            print('exec failed')
+if __name__ == '__main__':
+    main()
