@@ -15,7 +15,7 @@
 
 ;;You should have received a copy of the GNU Affero General Public
 ;;License along with Tool Builder.  If not, see <http://www.gnu.org/licenses/>.
-(import importlib)
+(import importlib dux)
 
 (defn load [mod]
       (try

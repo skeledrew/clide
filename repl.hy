@@ -1,6 +1,6 @@
-;;Tool Builder v0.1 - Build any software tool with Hy-interpreted pseudocode 
+;;Tool Builder v0.1 - Build any software tool with Hy-interpreted pseudocode
 
-;;@author Andrew Phillips  
+;;@author Andrew Phillips
 ;;@copyright 2016 Andrew Phillips <skeledrew@gmail.com>
 
 ;;Tool Builder is free software; you can redistribute it and/or
@@ -19,40 +19,51 @@
 
 (import [loader :as -loader] io)
 
-(setv -dish "<=: ")    
-(setv -food "error... :(")     
-(setv -diet "diet.hy")  
-(setv -nutri "nutri")   
-    
-(defn eat []  ; BUG: input not registered  
-      (setv -food     
-            (input -dish)))     
-   
-(defn digest [food]    
-      (do (with [[f (open -diet "a")]]    
+(defclass Store []
+  [
+   [--init-- (fn [self reducer]
+               (setv (. self -reducer) reducer)
+               (setv (. self -state) None)
+               (setv (. self -listeners) [])
+               (.dispatch self))]
+
+   [dispatch (fn [self action]
+               (do (if (= action None) (setv action {}))
+                   (setv (. self -state)
+                         (.-reducer self (. self -state) action))
+                   (for [listener (. self -listeners)] (.listener))))]
+
+   [subscribe (fn [self listener]
+                (do (.append (. self -listeners) listener)
+                    (defn unsubscribe []
+                      (.remove (. self -listeners listener)))))]
+   ])
+
+(setv -dish "<=: ")
+(setv -food "error... :(")
+(setv -diet "diet.hy")
+(setv -nutri "nutri")
+(setv -store {})
+
+(defn eat []  ; BUG: input not registered
+      (setv -food
+            (input -dish)))
+
+(defn digest [food]
+      (do (with [[f (open -diet "a")]]
                 (.write f (+ food "
-")))  
-          (if (= ":=>" (slice food 0 3))   
-              (swallow (slice food 4))    
-              (cook food))))    
-       
-(defn feed []  
-      (do (while True (setv -food (input -dish)) ;(eat)     
-   (if (= -food "sleep-pills") (break))    
-   (digest -food))))   
-     
-(defn swallow [food]   
-;      (with [[f (open nutri "w")]]     
-;            (.write f food))    
-;      (.load -loader -nutri))   
-       (eval (apply read [] {"from_file" (.StringIO io food)})))     
-         
-(defn cook [food] (cond [(= (slice food 0 3) "ex ") (print food)] [True (print "I cannot cook this food...")])) 
-         
-(defn prep [] (for [ingr (.split (. self food) " ")] (yield ingr)))    
-    
-;(defclass Ingreds []   
-;          [pos 0]    
-;          [[add (fn [self food] (setv (. self itms) (.split food " ")))]     
-;          [next (fn [self] (setv (. self pos) (inc (. self pos))))]   
-;          [get (fn [self] (get (. self itms) (. self pos)))]]) 
+")))
+          (if (= ":=>" (slice food 0 3))
+              (swallow (slice food 4))
+              (cook food))))
+
+(defn feed []
+      (do (while True (setv -food (input -dish)) ;(eat)
+   (if (= -food "sleep-pills") (break))
+   (digest -food))))
+
+(defn cook [food] (cond [(= (slice food 0 3) "ex ") (print food)] [True (print "I cannot cook this food...")]))
+
+;(defn prep [] (for [ingr (.split (. self food) " ")] (yield ingr)))
+
+;(defn )
