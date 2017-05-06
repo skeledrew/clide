@@ -16,7 +16,51 @@ PyShell
 #from common import *
 import pexpect
 import sys
+import importlib, inspect
+import sh, shlex
 
+
+DEBUG = False
+MAJOR = 0
+MINOR = 1
+
+def load(mod):
+    # load or reload a module. Currently broken
+
+    try:
+        print('Attempting to load ' + mod)
+        import re
+        exec('importlib.reload(%s)' % mod, globals())
+
+    except Exception as e:
+        print('Error: %s; Falling back to import' % str(e))
+        exec('%s = importlib.import_module(\'%s\')' % (mod, mod), globals())
+    return
+
+def pysh(cmd, debug=False):
+    # takes a shell command as a string and runs it with shlex and sh
+    if DEBUG: debug = True
+    result = None
+    if not type(cmd) == type('') or cmd == '': return None
+    cmdList = shlex.split(cmd)
+    if debug: print('DBG: cmdList = %s' % cmdList)
+    cmd = 'sh.%s(' % cmdList[0]
+    cmdList.remove(cmdList[0])
+
+    if len(cmdList) > 0:
+
+        for arg in cmdList:
+            cmd += '"%s",' % arg
+    cmd += ')'
+    if debug: print('DBG: cmd = %s' % cmd)
+
+    try:
+        result = eval(cmd)
+
+    except Exception as e:
+        print('EvalError: ' + str(e))
+    if debug: print('DBG: result = %s' % result)
+    return result
 
 def pesh(cmd, out=sys.stdout, shell='/bin/bash', debug=False):
     # takes command as a string or list
@@ -77,15 +121,40 @@ def launch(cmd, shell='/bin/bash'):
     child = pexpect.spawnu(shell, ['-c', cmd] if type(cmd) == type('') else cmd, timeout=None)
     child.expect([pexpect.EOF, pexpect.TIMEOUT])
 
-def main():
+def repl(debug=False):
+    print('Welcome to ClIDE, the Command-line IDE v%d.%d (---)\n' % (MAJOR, MINOR))
+
     while True:
-        cmd = input('<= ')
-        if cmd == 'goodbye': break
+        cmd = input('_')
+        if cmd == 'quit...': break
+        result = None
 
         try:
-            exec(cmd)
 
-        except:
-            pesh(cmd)
+            if cmd[0] == '>':
+                # execute as Python
+                exec(cmd[1:].strip())
+                result = 1
+                continue
+
+            if not result and cmd[0] == '(':
+                # execute as Hy
+                result = sh.hy('-c', cmd)
+                print(result)
+                continue
+
+
+            if cmd[0] == '$':
+                # execute as Shell
+                result = pysh(cmd[1:].strip())
+                print(result)
+                continue
+
+            print('Error: Unable to resolve ' + cmd)
+
+        except Exception as e:
+            print('ExecError: ' + str(e))
+        #print(result)
+
 if __name__ == '__main__':
-    main()
+    repl()
