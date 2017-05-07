@@ -18,11 +18,16 @@ import pexpect
 import sys
 import importlib, inspect
 import sh, shlex
+from pyparsing import nestedExpr
+import pdb
 
 
-DEBUG = False
+DEBUG = True
 MAJOR = 0
 MINOR = 1
+OB = '<{'
+CB = '}>'
+QUIT = 'quit...'
 autoclass = None
 cast = None
 
@@ -124,49 +129,91 @@ def launch(cmd, shell='/bin/bash'):
     child = pexpect.spawnu(shell, ['-c', cmd] if type(cmd) == type('') else cmd, timeout=None)
     child.expect([pexpect.EOF, pexpect.TIMEOUT])
 
-def repl(debug=False):
+def repl(_expr=None, debug=False, _level=0):
+    expr = None if _expr == None else _expr[:]
     if DEBUG: debug = True
     #pysh('export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64')
-    scp = importlib.import_module('jnius_config').set_classpath
-    scp('.')
-    global autoclass
-    autoclass = importlib.import_module('jnius').autoclass
-    global cast
-    cast = importlib.import_module('jnius').cast
-    if debug: print('DBG: autoclass = %s' % autoclass)
-    print('Welcome to ClIDE, the Command-line IDE v%d.%d (---)\n' % (MAJOR, MINOR))
+
+    if not expr:
+        scp = importlib.import_module('jnius_config').set_classpath
+        scp('.')
+        global autoclass
+        autoclass = importlib.import_module('jnius').autoclass
+        global cast
+        cast = importlib.import_module('jnius').cast
+        if debug: print('DBG: autoclass = %s' % autoclass)
+        print('Welcome to ClIDE, the Command-line IDE v%d.%d (---)\n' % (MAJOR, MINOR))
 
     while True:
-        cmd = input('_')
-        if cmd == 'quit...': break
+        cmd = ''
+
+        if expr:
+            # not top level
+            if debug: print('DBG: processing nested expr = %s' % expr)
+
+            for item in expr:
+                if debug: print('DBG: item = %s' % item)
+
+                if type(item) == type([]):
+                    # process a nested list
+                    if debug: print('DBG: level = %d' % _level)
+                    cmd += repl(item, _level=_level+1) + ' '
+
+                else:
+                    cmd += item + ' '
+            if debug: print('DBG: processed nest, cmd = -%s-' % cmd)
+            cmd = cmd.strip()
+            #return cmd  # NB: interesting bug where cmd is None without the return
+
+        else:
+            # top level
+            cmd = input('_')
+            if cmd == '': continue
+            cmd = nestedExpr(OB, CB).parseString('%s%s%s' % (OB, cmd, CB)).asList()[0]  # parse into list
+            #pdb.set_trace()
+            cmd = repl(cmd, _level=_level+1)  # recurse
+        if debug: print('DBG: expr = -%s- & level = %d' % (expr, _level))
+        if not expr and cmd == QUIT: break
         result = None
+        success = False
 
         try:
 
+            if expr and cmd == QUIT: return cmd
+
             if cmd[0] == '>':
                 # execute as Python
-                exec(cmd[1:].strip())
-                result = 1
-                continue
 
-            if not result and cmd[0] == '(':
+                try:
+                    result = eval(cmd[1:].strip())
+
+                except:
+                    exec(cmd[1:].strip())
+                    result = True
+                if debug: print('DBG: python result = %s' % result)
+                success = True
+
+            if cmd[0] == '(':
                 # execute as Hy
                 result = sh.hy('-c', cmd)
-                print(result)
-                continue
-
+                if debug: print('DBG: hy result = %s' % result)
+                success = True
 
             if cmd[0] == '$':
                 # execute as Shell
                 result = pysh(cmd[1:].strip())
+                if debug: print('DBG: shell result = %s' % result)
+                success = True
+            if expr and result: return result
+            if success and _level > 0: return result
+
+            if success:
                 print(result)
                 continue
-
             print('Error: Unable to resolve "%s"; Check the command syntax.' % cmd)
 
         except Exception as e:
             print('ExecError: ' + str(e))
-        #print(result)
 
 if __name__ == '__main__':
     repl()
