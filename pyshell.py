@@ -23,6 +23,9 @@ import sh, shlex
 DEBUG = False
 MAJOR = 0
 MINOR = 1
+autoclass = None
+cast = None
+
 
 def load(mod):
     # load or reload a module. Currently broken
@@ -122,6 +125,15 @@ def launch(cmd, shell='/bin/bash'):
     child.expect([pexpect.EOF, pexpect.TIMEOUT])
 
 def repl(debug=False):
+    if DEBUG: debug = True
+    #pysh('export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64')
+    scp = importlib.import_module('jnius_config').set_classpath
+    scp('.')
+    global autoclass
+    autoclass = importlib.import_module('jnius').autoclass
+    global cast
+    cast = importlib.import_module('jnius').cast
+    if debug: print('DBG: autoclass = %s' % autoclass)
     print('Welcome to ClIDE, the Command-line IDE v%d.%d (---)\n' % (MAJOR, MINOR))
 
     while True:
@@ -150,7 +162,7 @@ def repl(debug=False):
                 print(result)
                 continue
 
-            print('Error: Unable to resolve ' + cmd)
+            print('Error: Unable to resolve "%s"; Check the command syntax.' % cmd)
 
         except Exception as e:
             print('ExecError: ' + str(e))
