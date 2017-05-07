@@ -20,15 +20,22 @@ import importlib, inspect
 import sh, shlex
 from pyparsing import nestedExpr
 import pdb
+import os
 
 
 DEBUG = False
 MAJOR = 0
-MINOR = 3
+MINOR = 0
+BUILD = 3
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
 PROMPT = '_ '
+JAVA_CLASS_PATH = '.;/home/Projects/htmlunit/2.26/lib/*'
+INIT_FILE = 'clide.init'
+WELCOME_MSG = 'Welcome to ClIDE, the Command-line IDE v%d.%d.%d\n' % (MAJOR, MINOR, BUILD)
+COMMENT = '#'
+INITD = False  # True if initialization file was successfully read
 
 autoclass = None
 cast = None
@@ -126,13 +133,13 @@ def pesh(cmd, out=sys.stdout, shell='/bin/bash', debug=False):
                 return line
         return None
 
-def readExpr(debug=False):
-    # Reads an expression and does basic validation
-    cmd = ''
+def readExpr(cmd='', debug=False):
+    # Reads an expression from stdin and does basic validation
 
     while True:
-        cmd = input(PROMPT)
+        if not cmd: cmd = input(PROMPT)
         if cmd == '': continue
+        if cmd.strip()[0] == COMMENT: return None
         cmd = nestedExpr(OB, CB).parseString('%s%s%s' % (OB, cmd, CB)).asList()[0]  # parse into list
         break
     return cmd
@@ -202,16 +209,19 @@ def evalExpr(_expr=None, level=0, debug=False):
 def repl(_expr=None, debug=False):
     if DEBUG: debug = True
     #pysh('export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64')
+    initEnv()
 
-    if not scp:
+    if not autoclass:
+        global scp
         scp = importlib.import_module('jnius_config').set_classpath
-        scp('.')
+        #scp(JAVA_CLASS_PATH)
+        exec('scp("%s")' % JAVA_CLASS_PATH.replace(';', '","'), globals())
         global autoclass
         autoclass = importlib.import_module('jnius').autoclass
         global cast
         cast = importlib.import_module('jnius').cast
         if debug: print('DBG: autoclass = %s' % autoclass)
-        print('Welcome to ClIDE, the Command-line IDE v%d.%d (---)\n' % (MAJOR, MINOR))
+        print(WELCOME_MSG)
 
     while True:
         expr = readExpr()
@@ -220,6 +230,18 @@ def repl(_expr=None, debug=False):
         print(result)
     print('Goodbye cruel world :\'(')
 
+def initEnv():
+    # Initialize the environment with commands from a file
+    cmds = []
+
+    if not os.path.isfile(INIT_FILE): return
+
+    with open(INIT_FILE) as fo:
+
+        for line in fo:
+            cmd = readExpr(line)
+            if cmd: evalExpr(cmd)
+    return
 
 if __name__ == '__main__':
     repl()
