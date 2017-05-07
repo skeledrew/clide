@@ -22,12 +22,14 @@ from pyparsing import nestedExpr
 import pdb
 
 
-DEBUG = True
+DEBUG = False
 MAJOR = 0
-MINOR = 1
+MINOR = 3
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
+PROMPT = '_ '
+
 autoclass = None
 cast = None
 
@@ -123,18 +125,85 @@ def pesh(cmd, out=sys.stdout, shell='/bin/bash', debug=False):
             if result in line:  # TODO: make into regex match
                 return line
         return None
-    #raise Exception('Something went wrong in pesh')
 
-def launch(cmd, shell='/bin/bash'):
-    child = pexpect.spawnu(shell, ['-c', cmd] if type(cmd) == type('') else cmd, timeout=None)
-    child.expect([pexpect.EOF, pexpect.TIMEOUT])
+def readExpr(debug=False):
+    # Reads an expression and does basic validation
+    cmd = ''
 
-def repl(_expr=None, debug=False, _level=0):
-    expr = None if _expr == None else _expr[:]
+    while True:
+        cmd = input(PROMPT)
+        if cmd == '': continue
+        cmd = nestedExpr(OB, CB).parseString('%s%s%s' % (OB, cmd, CB)).asList()[0]  # parse into list
+        break
+    return cmd
+
+def evalExpr(_expr=None, level=0, debug=False):
+    # Recursively evaluates expression as a - nested - list of strings
+    expr = None if _expr == None else _expr[:]  # prevent recursive reference hell
+    if DEBUG: debug = True
+    if debug: print('DBG: processing nested, expr = %s, level = %d' % (str(expr), level))
+    cmd = ''
+
+    for item in expr:
+        # process each list element at the current level
+        if debug: print('DBG: item = %s' % item)
+
+        if type(item) == type([]):
+            # process a nested list
+            if debug: print('DBG: level = %d' % level)
+            cmd += evalExpr(item, level=level+1) + ' '
+
+        else:
+            cmd += item + ' '
+    cmd = cmd.strip()
+    if debug: print('DBG: processed nest, cmd = -%s-' % cmd)
+    if debug: print('DBG: expr = -%s- & level = %d' % (expr, level))
+    if level == 0 and cmd == QUIT: return QUIT
+    result = None
+    success = False
+
+    try:
+
+        #if expr and cmd == QUIT: return cmd
+
+        if cmd[0] == '>':
+            # execute as Python
+
+            try:
+                result = eval(cmd[1:].strip())
+                if debug: print('DBG: python eval\'d %s and got %s' % (cmd, result))
+
+            except:
+                exec(cmd[1:].strip(), globals())
+                if debug: print('DBG: exec\'d %s' % cmd)
+                result = True
+            #if debug: print('DBG: python result = %s' % result)
+            success = True
+
+        if cmd[0] == '(':
+            # execute as Hy
+            if cmd[1] in '>$': return cmd  # not to be eval'd with Hy
+            result = sh.hy('-c', cmd)
+            if debug: print('DBG: hy result = %s' % result)
+            success = True
+
+        if cmd[0] == '$':
+            # execute as Shell
+            result = pysh(cmd[1:].strip())
+            if debug: print('DBG: shell result = %s' % result)
+            success = True
+        if success: return str(result)
+        print('Error: Unable to resolve "%s"; Check the command syntax.' % cmd)
+
+    except Exception as e:
+        print('ExecError: ' + str(e))
+        return str(None)
+
+def repl(_expr=None, debug=False):
     if DEBUG: debug = True
     #pysh('export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64')
 
-    if not expr:
+    if not scp:
         scp = importlib.import_module('jnius_config').set_classpath
         scp('.')
         global autoclass
@@ -145,75 +214,12 @@ def repl(_expr=None, debug=False, _level=0):
         print('Welcome to ClIDE, the Command-line IDE v%d.%d (---)\n' % (MAJOR, MINOR))
 
     while True:
-        cmd = ''
+        expr = readExpr()
+        result = evalExpr(expr)
+        if result == QUIT: break
+        print(result)
+    print('Goodbye cruel world :\'(')
 
-        if expr:
-            # not top level
-            if debug: print('DBG: processing nested expr = %s' % expr)
-
-            for item in expr:
-                if debug: print('DBG: item = %s' % item)
-
-                if type(item) == type([]):
-                    # process a nested list
-                    if debug: print('DBG: level = %d' % _level)
-                    cmd += repl(item, _level=_level+1) + ' '
-
-                else:
-                    cmd += item + ' '
-            if debug: print('DBG: processed nest, cmd = -%s-' % cmd)
-            cmd = cmd.strip()
-            #return cmd  # NB: interesting bug where cmd is None without the return
-
-        else:
-            # top level
-            cmd = input('_')
-            if cmd == '': continue
-            cmd = nestedExpr(OB, CB).parseString('%s%s%s' % (OB, cmd, CB)).asList()[0]  # parse into list
-            #pdb.set_trace()
-            cmd = repl(cmd, _level=_level+1)  # recurse
-        if debug: print('DBG: expr = -%s- & level = %d' % (expr, _level))
-        if not expr and cmd == QUIT: break
-        result = None
-        success = False
-
-        try:
-
-            if expr and cmd == QUIT: return cmd
-
-            if cmd[0] == '>':
-                # execute as Python
-
-                try:
-                    result = eval(cmd[1:].strip())
-
-                except:
-                    exec(cmd[1:].strip())
-                    result = True
-                if debug: print('DBG: python result = %s' % result)
-                success = True
-
-            if cmd[0] == '(':
-                # execute as Hy
-                result = sh.hy('-c', cmd)
-                if debug: print('DBG: hy result = %s' % result)
-                success = True
-
-            if cmd[0] == '$':
-                # execute as Shell
-                result = pysh(cmd[1:].strip())
-                if debug: print('DBG: shell result = %s' % result)
-                success = True
-            if expr and result: return result
-            if success and _level > 0: return result
-
-            if success:
-                print(result)
-                continue
-            print('Error: Unable to resolve "%s"; Check the command syntax.' % cmd)
-
-        except Exception as e:
-            print('ExecError: ' + str(e))
 
 if __name__ == '__main__':
     repl()
