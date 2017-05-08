@@ -21,25 +21,83 @@ import sh, shlex
 from pyparsing import nestedExpr
 import pdb
 import os
+from pyswip import *
+from io import StringIO
+import time
 
 
 DEBUG = False
 MAJOR = 0
 MINOR = 0
-BUILD = 3
+BUILD = 4
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
-PROMPT = '_ '
+PROMPT = '_'
 JAVA_CLASS_PATH = '.;/home/skeledrew/Projects/htmlunit/2.26/lib/*'
 INIT_FILE = 'clide.init'
 WELCOME_MSG = 'Welcome to ClIDE, the Command-line IDE v%d.%d.%d\n' % (MAJOR, MINOR, BUILD)
 COMMENT = '#'
 INITD = False  # True if initialization file was successfully read
+KDBASE = 'test.pl'
+USE_PDB = False
+TMP_FILE = 'pyshell.out'
 
 autoclass = None
 cast = None
 
+
+def loadText(path):
+    text = ''
+
+    with open(path) as f:
+
+        for line in f:
+            text += line
+    return text
+
+def evalProlog(cmd, debug=False):
+    if DEBUG: debug = True
+    expList = [pexpect.EOF, pexpect.TIMEOUT, '\?-', '=']
+    child = pexpect.spawnu('/bin/bash -c "swipl --quiet -s %s"' % KDBASE)
+    child.logfile_read = open(TMP_FILE, 'w')
+    asked = False
+    answered = False
+
+    while True:
+        idx = child.expect(expList)
+        time.sleep(0.5)
+        if debug: print('DBG: pexpect got |%s|' % loadText(TMP_FILE))
+
+        if idx == 2 and not asked:
+            # at prompt
+            if debug: print('DBG: got a prompt!')
+            child.sendline(cmd)
+            asked = True
+            continue
+
+        if idx == 2 and asked:
+            # at another prompt
+            if debug: print('DBG: another prompt...')
+            return loadText(TMP_FILE)
+
+        if idx == 13:
+            # prob got all the result
+            if debug: print('DBG: got dot in |%s|' % loadText(TMP_FILE))
+            child.sendline('dead.')
+            #return loadText(TMP_FILE)
+
+        if idx == 3:
+            # prob multiple bindings
+            if debug: print('DBG: multiple bindings')
+            child.sendline(';')
+            continue
+
+        if idx == 5:
+            # not sure
+            print('Not sure if we should get here...')
+            child.terminate()
+            return None
 
 def load(mod):
     # load or reload a module. Currently broken
@@ -163,11 +221,12 @@ def evalExpr(_expr=None, level=0, debug=False):
         else:
             cmd += item + ' '
     cmd = cmd.strip()
-    if debug: print('DBG: processed nest, cmd = -%s-' % cmd)
-    if debug: print('DBG: expr = -%s- & level = %d' % (expr, level))
+    if debug: print('DBG: processed nest, cmd = |%s|' % cmd)
+    if debug: print('DBG: expr = %s & level = %d' % (expr, level))
     if level == 0 and cmd == QUIT: return QUIT
     result = None
     success = False
+    if USE_PDB: pdb.set_trace()
 
     try:
 
@@ -201,10 +260,22 @@ def evalExpr(_expr=None, level=0, debug=False):
             result = pysh(cmd[1:].strip())
             if debug: print('DBG: shell result = %s' % result)
             success = True
+
+        if cmd[0] == '?' or cmd[-1] == '.':
+            # execute as Prolog
+            if cmd[0] == '?': cmd = cmd[1:].strip()
+            if not cmd[-1] == '.': cmd += '.'
+            if debug: print('cmd = "%s", KDBASE = %s' % (cmd, KDBASE))
+            #result = pesh('swipl -s %s -g "%s" -t halt' % (KDBASE, cmd), 0)
+            result = evalProlog(cmd)
+            if debug: print('DBG: prolog result = %s' % result)
+            success = True
+
         if success: return str(result)
         print('Error: Unable to resolve "%s"; Check the command syntax.' % cmd)
 
     except Exception as e:
+        if debug: raise
         print('ExecError: ' + str(e))
         return str(None)
 

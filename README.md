@@ -18,26 +18,33 @@ on the desktop, internet, etc.
 - python3
 - pexpect
 - sh
+- java
 - pyjnius
 - pyparsing
 - hy
+- swi-prolog
+- pyswip
 - probably more...
 
 ### Usage
 - Enter 'quit...' to quit
 - Prepend Shell commands with '$'
--- '$ ls -lt'
+ - '$ ls -lt'
 - Prepend Python commands with '>'
--- '> global myvar; myvar = 13'
+ - '> global myvar; myvar = 13'
 - Hy commands must be in a single parens
--- '(+ 5 12)'
+ - '(+ 5 12)'
 - Access Java classes from Python
--- '> global System; System = autoclass("java.lang.System")'
--- '> System.out.println("Hello from Java!")'
+ - '> global System; System = autoclass("java.lang.System")'
+ - '> System.out.println("Hello from Java!")'
 - Add interesting classpaths to the init file (cannot be done at the repl)
--- '> JAVA_CLASS_PATH += ";/path/to/jar/files/*;/more/paths/*"' (note the extra quotes)
+ - '> JAVA_CLASS_PATH += ";/path/to/jar/files/*;/more/paths/*"' (note the extra quotes)
 - Nest multiple langs with '<{' and '}>'
--- '> myvar = <{(/ 100 31)}>
+ - '> myvar = <{(/ 100 31)}>
+- Access Prolog from Python (via pyswip)
+ - '> prolog = Prolog(); prolog.assertz("father(michael,john)")'
+- Prepend pure Prolog commands with '?' or end with '.'
+ - 'human(socrates).'
 - Report errors (I'm sure there are many :))
 
 ### Notes
