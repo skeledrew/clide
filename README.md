@@ -1,30 +1,29 @@
-# ClIDE -- Command-line Integrated Development Environment
+## ClIDE -- Command-line Integrated Development Environment
 
-## Description
+### Description
 ClIDE is essentially a Python interpreter that mixes different languages, including
 Hy, Shell, Java and eventually Prolog, JavaScript and natural! The final aim is
 an interpreter that can take natural language and learn as well as perform actions
 on the desktop, internet, etc.
 
-## Installation
+### Installation
 - Install requirements (soon to be automated)
-- Make executable with 'chmod +x pyshell.py'
+- Edit JAVA_HOME in 'clide' to point to your install
+- Make executable with 'chmod +x clide'
 - Create an init file 'clide.init'
-- Run ./pyshell.py
+- Run ./clide
 - Experiment!
 
-### Requirements
+#### Requirements
 - python3
 - pexpect
 - sh
 - pyjnius
 - pyparsing
 - hy
-- <probably more>
+- probably more...
 
-## Usage
-- Ensure the env var 'JAVA_HOME' points to your Java installation
--- Modify and run 'export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64'
+### Usage
 - Enter 'quit...' to quit
 - Prepend Shell commands with '$'
 -- '$ ls -lt'
@@ -41,7 +40,7 @@ on the desktop, internet, etc.
 -- '> myvar = <{(/ 100 31)}>
 - Report errors (I'm sure there are many :))
 
-## Notes
+### Notes
 - Python code must use the global scope
 - Cannot do Python multiline block statements due to parser operation
 - Hy operations are enforced immutable, use as pure functions
@@ -49,7 +48,7 @@ on the desktop, internet, etc.
 - The print function is currently needed to simulate a return for Python statements and Hy
 - Cannot use regular parens with parser due to mangling of Python and Prolog functions
 
-## ToDo
+### ToDo
 - Add Prolog
 - Add natural language
 - Add logging
