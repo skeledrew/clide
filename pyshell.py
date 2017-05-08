@@ -31,7 +31,7 @@ OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
 PROMPT = '_ '
-JAVA_CLASS_PATH = '.;/home/Projects/htmlunit/2.26/lib/*'
+JAVA_CLASS_PATH = '.;/home/skeledrew/Projects/htmlunit/2.26/lib/*'
 INIT_FILE = 'clide.init'
 WELCOME_MSG = 'Welcome to ClIDE, the Command-line IDE v%d.%d.%d\n' % (MAJOR, MINOR, BUILD)
 COMMENT = '#'
@@ -189,7 +189,8 @@ def evalExpr(_expr=None, level=0, debug=False):
 
         if cmd[0] == '(':
             # execute as Hy
-            if cmd[1] in '>$': return cmd  # not to be eval'd with Hy
+            #if cmd[1] in '>$': return cmd  # not to be eval'd with Hy
+            if not 'print' in cmd: cmd = '(print %s)' % cmd  # wrap with print to trigger return
             result = sh.hy('-c', cmd)
             if debug: print('DBG: hy result = %s' % result)
             success = True
@@ -210,13 +211,13 @@ def repl(_expr=None, debug=False):
     if DEBUG: debug = True
     #pysh('export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64')
     initEnv()
+    global autoclass
 
     if not autoclass:
+        # first run
         global scp
         scp = importlib.import_module('jnius_config').set_classpath
-        #scp(JAVA_CLASS_PATH)
         exec('scp("%s")' % JAVA_CLASS_PATH.replace(';', '","'), globals())
-        global autoclass
         autoclass = importlib.import_module('jnius').autoclass
         global cast
         cast = importlib.import_module('jnius').cast
