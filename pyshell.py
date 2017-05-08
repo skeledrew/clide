@@ -179,6 +179,7 @@ def evalExpr(_expr=None, level=0, debug=False):
             try:
                 result = eval(cmd[1:].strip())
                 if debug: print('DBG: python eval\'d %s and got %s' % (cmd, result))
+                if not result: result = True
 
             except:
                 exec(cmd[1:].strip(), globals())
