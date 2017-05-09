@@ -54,9 +54,9 @@ on the desktop, internet, etc.
 - Prolog is meant to manage the knowledge base
 - The print function is currently needed to simulate a return for Python statements and Hy
 - Cannot use regular parens with parser due to mangling of Python and Prolog functions
+- Prolog works for unknown reasons; will break any time
 
 ### ToDo
-- Add Prolog
 - Add natural language
 - Add logging
 - Line editing and history

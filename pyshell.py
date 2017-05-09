@@ -24,6 +24,7 @@ import os
 from pyswip import *
 from io import StringIO
 import time
+import readline
 
 
 DEBUG = False
@@ -82,13 +83,13 @@ def evalProlog(cmd, debug=False):
             return loadText(TMP_FILE)
 
         if idx == 13:
-            # prob got all the result
+            # prob got all the result. NB: should be #3 targetting '.' but currently works w/out
             if debug: print('DBG: got dot in |%s|' % loadText(TMP_FILE))
-            child.sendline('dead.')
+            child.sendline('halt.')
             #return loadText(TMP_FILE)
 
         if idx == 3:
-            # prob multiple bindings
+            # prob multiple bindings. should be #4
             if debug: print('DBG: multiple bindings')
             child.sendline(';')
             continue
@@ -281,7 +282,6 @@ def evalExpr(_expr=None, level=0, debug=False):
 
 def repl(_expr=None, debug=False):
     if DEBUG: debug = True
-    #pysh('export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64')
     initEnv()
     global autoclass
 
@@ -306,6 +306,8 @@ def repl(_expr=None, debug=False):
 def initEnv():
     # Initialize the environment with commands from a file
     cmds = []
+    readline.parse_and_bind('tab: complete')
+    readline.parse_and_bind('set enable-keypad on')
 
     if not os.path.isfile(INIT_FILE): return
 
