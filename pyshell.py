@@ -27,6 +27,7 @@ from pyswip import *
 from io import StringIO
 import time
 import readline
+import logging
 
 
 DEBUG = False
@@ -46,9 +47,15 @@ KDBASE = 'clide.pl'
 USE_PDB = False
 TMP_FILE = 'clide.tmp'
 HIST_FILE = 'clide.hist'
+USE_HIST = 3  # 0 = none, 1 = save, 2 = load, 3 = all
+IFF = ':=>'  # separate pseudolog head and body
+CONJ = '&&&'  # conjunct 2 body parts
+DISJ = '|||'  # disjunct 2 body parts
 
 autoclass = None
 cast = None
+_last_shell_result = None
+_last_prolog_result = None
 
 
 def get_history_items():
@@ -292,31 +299,71 @@ def evalExpr(_expr=None, level=0, debug=False):
         if cmd[0] == '$':
             # execute as Shell
             result = pysh(cmd[1:].strip())
+            global _last_shell_result
+            _last_shell_result = result
             if debug: print('DBG: shell result = %s' % result)
             success = True
 
         if cmd[0] == '?' or cmd[-1] == '.':
-            # execute as Prolog
+            # execute as Prolog; yields a boolean, string or list of bindings
             if cmd[0] == '?': cmd = cmd[1:].strip()
             if not cmd[-1] == '.': cmd += '.'
             if debug: print('cmd = "%s", KDBASE = %s' % (cmd, KDBASE))
             #result = pesh('swipl -s %s -g "%s" -t halt' % (KDBASE, cmd), 0)
-            result = evalProlog(cmd)
-            if debug: print('DBG: prolog result = %s' % result)
+            raw = evalProlog(cmd)
+            if debug: print('DBG: prolog raw result = %s' % raw)
+
+            if '\n' in raw:
+                # will prob always be true
+                raw = raw.split('\n')
+                rare = []
+                done = ''
+
+                for line in raw:
+                    # get rid of the chaff
+                    if line.startswith('?-') or line.startswith('|') or len(line.strip()) < 3: continue
+                    done += line + '\n'
+
+                    if ' = ' in line:
+                        # binding; TODO: upgrate to intelligent detection
+                        line = line.split(' = ')
+                        if line[1][-1] == ';' or line[1][-1] == '.': line[1] = line[1][:-1].strip()
+                        rare.append({line[0]: line[1]})
+
+                    else:
+                        # other returns
+                        rare.append(line[:-1].strip())
+                result = rare if len(rare) > 1 else rare[0]  # return list or single
+                result = done.strip()  # (alt) return string w/out final newline
+                global _last_prolog_result
+                _last_prolog_result = result
+
+            else:
+                # prob shouldn't get here
+                print('Why are we here???')
+                raise
             success = True
+
+        if cmd.strip().endswith(IFF):
+            # activate reader mode
+            pass
+
+        if cmd.strip().endswith(CONJ) or cmd.strip().endswith(DISJ):
+            # remain in reader mode
+            pass
 
         if success: return str(result)
         print('Error: Unable to resolve "%s"; Check the command syntax.' % cmd)
 
     except Exception as e:
-        if debug: raise
+        if DEBUG and USE_PDB: raise
         print('ExecError: ' + str(e))
         return str(None)
 
 def repl(_expr=None, debug=False):
     if DEBUG: debug = True
     initEnv()
-    if os.path.exists(HIST_FILE): readline.read_history_file(HIST_FILE)
+    if USE_HIST in [2, 3] and os.path.exists(HIST_FILE): readline.read_history_file(HIST_FILE)
     global autoclass
 
     if not autoclass:
@@ -335,7 +382,7 @@ def repl(_expr=None, debug=False):
         result = evalExpr(expr)
         if result == QUIT: break
         print(result)
-    readline.write_history_file(HIST_FILE)
+    if USE_HIST in [1, 3]: readline.write_history_file(HIST_FILE)
     print('Goodbye cruel world :\'(')
 
 def initEnv():

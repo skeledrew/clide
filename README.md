@@ -29,22 +29,22 @@ on the desktop, internet, etc.
 ### Usage
 - Enter 'quit...' to quit
 - Prepend Shell commands with '$'
- - '$ ls -lt'
+  - '$ ls -lt'
 - Prepend Python commands with '>'
- - '> global myvar; myvar = 13'
+  - '> global myvar; myvar = 13'
 - Hy commands must be in a single parens
- - '(+ 5 12)'
+  - '(+ 5 12)'
 - Access Java classes from Python
- - '> global System; System = autoclass("java.lang.System")'
- - '> System.out.println("Hello from Java!")'
+  - '> global System; System = autoclass("java.lang.System")'
+  - '> System.out.println("Hello from Java!")'
 - Add interesting classpaths to the init file (cannot be done at the repl)
- - '> JAVA_CLASS_PATH += ";/path/to/jar/files/*;/more/paths/*"' (note the extra quotes)
+  - '> JAVA_CLASS_PATH += ";/path/to/jar/files/*;/more/paths/*"' (note the extra quotes)
 - Nest multiple langs with '<{' and '}>'
- - '> myvar = <{(/ 100 31)}>
+  - '> myvar = <{(/ 100 31)}>
 - Access Prolog from Python (via pyswip)
- - '> prolog = Prolog(); prolog.assertz("father(michael,john)")'
+  - '> prolog = Prolog(); prolog.assertz("father(michael,john)")'
 - Prepend pure Prolog commands with '?' or end with '.'
- - 'human(socrates).'
+  - 'human(socrates).'
 - Report errors (I'm sure there are many :))
 
 ### Notes
@@ -54,12 +54,12 @@ on the desktop, internet, etc.
 - Prolog is meant to manage the knowledge base
 - The print function is currently needed to simulate a return for Python statements and Hy
 - Cannot use regular parens with parser due to mangling of Python and Prolog functions
-- Prolog works for unknown reasons; will break any time
+- Prolog works for unknown reasons; may break any time
+- The global variables '_last_shell_result' and '_last_shell_result' can be used for issues with using nested Shell and Prolog
 
 ### ToDo
 - Add natural language
 - Add logging
-- Line editing and history
 - Add JS via Rhino/Nashorn
 - Setup script
 - Autodetect lang without identifier use
