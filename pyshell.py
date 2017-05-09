@@ -3,13 +3,15 @@
 
 '''
 PyShell
-- A thin Python REPL providing additional functions
+- A thin Python REPL providing additional functions (not quite anymore; to revise)
 - Addons:
 -- Session save/autosave/load
 -- Input history
 -- Output logging
 -- Init templates
 -- Allow multiline code correction and formatting
+- Notes:
+-- History functions from https://pymotw.com/2/readline/
 '''
 
 
@@ -40,14 +42,45 @@ INIT_FILE = 'clide.init'
 WELCOME_MSG = 'Welcome to ClIDE, the Command-line IDE v%d.%d.%d\n' % (MAJOR, MINOR, BUILD)
 COMMENT = '#'
 INITD = False  # True if initialization file was successfully read
-KDBASE = 'test.pl'
+KDBASE = 'clide.pl'
 USE_PDB = False
-TMP_FILE = 'pyshell.out'
+TMP_FILE = 'clide.tmp'
+HIST_FILE = 'clide.hist'
 
 autoclass = None
 cast = None
 
 
+def get_history_items():
+    return [ readline.get_history_item(i)
+             for i in xrange(1, readline.get_current_history_length() + 1)
+             ]
+
+class HistoryCompleter(object):
+
+    def __init__(self):
+        self.matches = []
+        return
+
+    def complete(self, text, state):
+        response = None
+        if state == 0:
+            history_values = get_history_items()
+            logging.debug('history: %s', history_values)
+            if text:
+                self.matches = sorted(h 
+                                      for h in history_values 
+                                      if h and h.startswith(text))
+            else:
+                self.matches = []
+            logging.debug('matches: %s', self.matches)
+        try:
+            response = self.matches[state]
+        except IndexError:
+            response = None
+        logging.debug('complete(%s, %s) => %s', 
+                      repr(text), state, repr(response))
+        return response
 def loadText(path):
     text = ''
 
@@ -283,6 +316,7 @@ def evalExpr(_expr=None, level=0, debug=False):
 def repl(_expr=None, debug=False):
     if DEBUG: debug = True
     initEnv()
+    if os.path.exists(HIST_FILE): readline.read_history_file(HIST_FILE)
     global autoclass
 
     if not autoclass:
@@ -301,11 +335,12 @@ def repl(_expr=None, debug=False):
         result = evalExpr(expr)
         if result == QUIT: break
         print(result)
+    readline.write_history_file(HIST_FILE)
     print('Goodbye cruel world :\'(')
 
 def initEnv():
     # Initialize the environment with commands from a file
-    cmds = []
+    readline.set_completer(HistoryCompleter().complete)
     readline.parse_and_bind('tab: complete')
     readline.parse_and_bind('set enable-keypad on')
 
