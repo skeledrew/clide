@@ -104,6 +104,7 @@ def loadText(path):
 
 def evalPseudolang(cmd, debug=False):
     pass
+
 def evalProlog(cmd, debug=False):
     if DEBUG: debug = True
     expList = [pexpect.EOF, pexpect.TIMEOUT, '\?-', '=']
@@ -115,29 +116,29 @@ def evalProlog(cmd, debug=False):
     while True:
         idx = child.expect(expList)
         time.sleep(0.5)
-        if debug: print('DBG: pexpect got |%s|' % loadText(TMP_FILE))
+        #if debug: print('DBG: pexpect got |%s|' % loadText(TMP_FILE))
 
         if idx == 2 and not asked:
             # at prompt
-            if debug: print('DBG: got a prompt!')
+            #if debug: print('DBG: got a prompt!')
             child.sendline(cmd)
             asked = True
             continue
 
         if idx == 2 and asked:
             # at another prompt
-            if debug: print('DBG: another prompt...')
+            #if debug: print('DBG: another prompt...')
             return loadText(TMP_FILE)
 
         if idx == 13:
             # prob got all the result. NB: should be #3 targetting '.' but currently works w/out
-            if debug: print('DBG: got dot in |%s|' % loadText(TMP_FILE))
+            #if debug: print('DBG: got dot in |%s|' % loadText(TMP_FILE))
             child.sendline('halt.')
             #return loadText(TMP_FILE)
 
         if idx == 3:
             # prob multiple bindings. should be #4
-            if debug: print('DBG: multiple bindings')
+            #if debug: print('DBG: multiple bindings')
             child.sendline(';')
             continue
 
@@ -146,6 +147,46 @@ def evalProlog(cmd, debug=False):
             print('Not sure if we should get here...')
             child.terminate()
             return None
+
+def gen_temp(pre='tmp', size=4, char='0'):
+    '''Generate a unique temporary global variable
+
+:parameters:
+-  `name` (type) - <desc>
+
+:returns: <desc>
+:rtype:
+(str)
+
+:created: 17-05-11
+:modified: 17-05-11
+:author: <detail>
+
+.. notes:: <text>
+
+.. todo:: <text>
+
+.. changes:: <text>
+'''
+    global_ = globals()
+    varname = ''
+
+    for num in range(9999):
+        # find a unique name
+        varname = pre + str(num).rjust(size, char)
+        if varname in global_: continue
+        exec('global %s; %s = None' % (varname, varname))
+        break
+    return varname
+
+def jimport(jclass, name='', global_=True):
+    # import a Java class
+    if not autoclass: raise Exception('Cannot import Java class without autoclass.')
+
+    if not name: name = jclass.split('.')[-1] if '.' in jclass else jclass
+    jclass = eval('autoclass("%s")' % (jclass))
+    if global_: exec('global %s; %s = jclass' % (name, name))
+    return eval('name')
 
 def loadModule(mod):
     # load or reload a module. Currently broken
@@ -242,11 +283,13 @@ def pesh(cmd, out=sys.stdout, shell='/bin/bash', debug=False):
 
 def readExpr(cmd='', debug=False):
     # Reads an expression from stdin and does basic validation
+    gotArg = True if cmd else False
 
     while True:
         if not cmd: cmd = input(PROMPT)
-        if cmd == '': continue
-        if cmd.strip()[0] == COMMENT: return None
+        cmd = cmd.strip()
+        if not gotArg and cmd == '': continue
+        if cmd[0] == COMMENT: return None
         cmd = nestedExpr(OB, CB).parseString('%s%s%s' % (OB, cmd, CB)).asList()[0]  # parse into list
         break
     return cmd
@@ -254,24 +297,24 @@ def readExpr(cmd='', debug=False):
 def evalExpr(_expr=None, level=0, debug=False):
     # Recursively evaluates expression as a - nested - list of strings
     expr = None if _expr == None else _expr[:]  # prevent recursive reference hell
-    if DEBUG: debug = True
-    if debug: print('DBG: processing nested, expr = %s, level = %d' % (str(expr), level))
+    #if DEBUG: debug = True
+    #if debug: print('DBG: processing nested, expr = %s, level = %d' % (str(expr), level))
     cmd = ''
 
     for item in expr:
         # process each list element at the current level
-        if debug: print('DBG: item = %s' % item)
+        #if debug: print('DBG: item = %s' % item)
 
         if type(item) == type([]):
             # process a nested list
-            if debug: print('DBG: level = %d' % level)
+            #if debug: print('DBG: level = %d' % level)
             cmd += evalExpr(item, level=level+1) + ' '
 
         else:
             cmd += item + ' '
     cmd = cmd.strip()
-    if debug: print('DBG: processed nest, cmd = |%s|' % cmd)
-    if debug: print('DBG: expr = %s & level = %d' % (expr, level))
+    #if debug: print('DBG: processed nest, cmd = |%s|' % cmd)
+    #if debug: print('DBG: expr = %s & level = %d' % (expr, level))
     if level == 0 and cmd == QUIT: return QUIT
     result = None
     success = False
@@ -290,14 +333,13 @@ def evalExpr(_expr=None, level=0, debug=False):
 
             try:
                 result = eval(cmd[1:].strip())
-                if debug: print('DBG: python eval\'d %s and got %s' % (cmd, result))
+                #if debug: print('DBG: python eval\'d %s and got %s' % (cmd, result))
                 if not result: result = True
 
             except:
                 exec(cmd[1:].strip(), globals())
-                if debug: print('DBG: exec\'d %s' % cmd)
+                #if debug: print('DBG: exec\'d %s' % cmd)
                 result = True
-            #if debug: print('DBG: python result = %s' % result)
             success = True
 
         if cmd[0] == '(':
@@ -305,7 +347,7 @@ def evalExpr(_expr=None, level=0, debug=False):
             #if cmd[1] in '>$': return cmd  # not to be eval'd with Hy
             if not 'print' in cmd: cmd = '(print %s)' % cmd  # wrap with print to trigger return
             result = sh.hy('-c', cmd)
-            if debug: print('DBG: hy result = %s' % result)
+            #if debug: print('DBG: hy result = %s' % result)
             success = True
 
         if cmd[0] == '$':
@@ -313,17 +355,18 @@ def evalExpr(_expr=None, level=0, debug=False):
             result = pysh(cmd[1:].strip())
             global _last_shell_result
             _last_shell_result = result
-            if debug: print('DBG: shell result = %s' % result)
+            #result = '"%s"' % result  # should fix embedded issue
+            #if debug: print('DBG: shell result = %s' % result)
             success = True
 
         if cmd[0] == '?' or cmd[-1] == '.':
             # execute as Prolog; yields a boolean, string or list of bindings
             if cmd[0] == '?': cmd = cmd[1:].strip()
             if not cmd[-1] == '.': cmd += '.'
-            if debug: print('cmd = "%s", KDBASE = %s' % (cmd, KDBASE))
+            #if debug: print('cmd = "%s", KDBASE = %s' % (cmd, KDBASE))
             #result = pesh('swipl -s %s -g "%s" -t halt' % (KDBASE, cmd), 0)
             raw = evalProlog(cmd)
-            if debug: print('DBG: prolog raw result = %s' % raw)
+            #if debug: print('DBG: prolog raw result = %s' % raw)
 
             if '\n' in raw:
                 # will prob always be true
@@ -381,7 +424,7 @@ def evalExpr(_expr=None, level=0, debug=False):
         return str(None)
 
 def repl(_expr=None, debug=False):
-    if DEBUG: debug = True
+    #if DEBUG: debug = True
     initEnv()
     if USE_HIST in [2, 3] and os.path.exists(HIST_FILE): readline.read_history_file(HIST_FILE)
     global autoclass
@@ -395,12 +438,12 @@ def repl(_expr=None, debug=False):
         autoclass = importlib.import_module('jnius').autoclass
         global cast
         cast = importlib.import_module('jnius').cast
-        if debug: print('DBG: autoclass = %s' % autoclass)
+        #if debug: print('DBG: autoclass = %s' % autoclass)
         print(WELCOME_MSG)
 
     while True:
         if USE_TRACE and not _tracer:
-            _tracer = debugging.Trace(ignoredirs=['/usr', '/home/skeledrew/.local'])
+            _tracer = debugging.Trace(ignoremods=['debugging'], ignoredirs=['/usr', '/home/skeledrew/.local'])
         expr = readExpr()
         result = evalExpr(expr) if not USE_TRACE else _tracer.runfunc(evalExpr, expr)
         if result == QUIT: break

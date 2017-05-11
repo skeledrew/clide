@@ -2,7 +2,7 @@
 
 ### Description
 ClIDE is essentially a Python interpreter that mixes different languages, including
-Hy, Shell, Java and eventually Prolog, JavaScript and natural! The final aim is
+Hy, Shell, Java and eventually JavaScript and natural! The final aim is
 an interpreter that can take natural language and learn as well as perform actions
 on the desktop, internet, etc.
 
@@ -63,3 +63,28 @@ on the desktop, internet, etc.
 - Add JS via Rhino/Nashorn
 - Setup script
 - Autodetect lang without identifier use
+
+### Doc Template
+'''Documentation template for classes and functions.
+
+Longer explanation that may take multiple lines...
+
+:parameters:
+  -  `name` (type) - <desc>
+
+:returns: <desc>
+:rtype:
+(type)
+ 
+:created: 17-05-11
+:modified: 17-05-11
+:author: Andrew Phillips <skeledrew@gmail.com>
+ 
+.. notes:: <text>
+ 
+.. todo:: <text>
+ 
+.. changes:: <text>
+'''
+
+NB: If multiple types, put types in curlies.

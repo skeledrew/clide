@@ -36,9 +36,10 @@ class Hook():
 class Trace(trace.Trace):
     watchlist = {}
 
-    def add_watch(self, var):
-        if not var in self.watchlist: self.watchlist[var] = None
-        print('Added "%s" to the watchlist' % var)
+    def add_watch(self, *vars):
+        for var in vars:
+            if not var in self.watchlist: self.watchlist[var] = None
+            print('Added "%s" to the watchlist' % var)
         return
 
     def pop_watch(self, var):
