@@ -28,12 +28,13 @@ from io import StringIO
 import time
 import readline
 import logging
+import debugging
 
 
 DEBUG = False
 MAJOR = 0
 MINOR = 0
-BUILD = 4
+BUILD = 5
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
@@ -51,12 +52,16 @@ USE_HIST = 3  # 0 = none, 1 = save, 2 = load, 3 = all
 IFF = ':=>'  # separate pseudolog head and body
 CONJ = '&&&'  # conjunct 2 body parts
 DISJ = '|||'  # disjunct 2 body parts
+ALPHA_LOWER = ''.join([chr(i) for i in range(97, 123)])
+ALPHA_UPPER = ''.join([chr(i) for i in range(65, 91)])
+NUMBERS = ''.join([str(i) for i in range(0, 10)])
+USE_TRACE = False
 
 autoclass = None
 cast = None
 _last_shell_result = None
 _last_prolog_result = None
-
+_tracer = None
 
 def get_history_items():
     return [ readline.get_history_item(i)
@@ -97,6 +102,8 @@ def loadText(path):
             text += line
     return text
 
+def evalPseudolang(cmd, debug=False):
+    pass
 def evalProlog(cmd, debug=False):
     if DEBUG: debug = True
     expList = [pexpect.EOF, pexpect.TIMEOUT, '\?-', '=']
@@ -140,17 +147,18 @@ def evalProlog(cmd, debug=False):
             child.terminate()
             return None
 
-def load(mod):
+def loadModule(mod):
     # load or reload a module. Currently broken
 
     try:
-        print('Attempting to load ' + mod)
-        import re
+        if DEBUG: print('DBG: Attempting to load ' + mod)
+        #import re
         exec('importlib.reload(%s)' % mod, globals())
 
     except Exception as e:
-        print('Error: %s; Falling back to import' % str(e))
-        exec('%s = importlib.import_module(\'%s\')' % (mod, mod), globals())
+        if DEBUG: print('DBG: Error: %s; Falling back to import' % str(e))
+        mod = eval('importlib.import_module(\'%s\')' % (mod))
+        return mod
     return
 
 def pysh(cmd, debug=False):
@@ -273,6 +281,10 @@ def evalExpr(_expr=None, level=0, debug=False):
 
         #if expr and cmd == QUIT: return cmd
 
+        if cmd.startswith(OB) and cmd.endswith(CB):
+            # top level enclosure
+            pass
+
         if cmd[0] == '>':
             # execute as Python
 
@@ -346,7 +358,15 @@ def evalExpr(_expr=None, level=0, debug=False):
 
         if cmd.strip().endswith(IFF):
             # activate reader mode
-            pass
+            isNatLang = False
+            accepted = ALPHA_LOWER + ' '
+            cmd = cmd.strip()[:-3]
+
+            for char in cmd:
+
+                if not char in accepted:
+                    raise Exception('Invalid character detected. Command should only include "%s"' % accepted)
+            isNatLang = True
 
         if cmd.strip().endswith(CONJ) or cmd.strip().endswith(DISJ):
             # remain in reader mode
@@ -365,6 +385,7 @@ def repl(_expr=None, debug=False):
     initEnv()
     if USE_HIST in [2, 3] and os.path.exists(HIST_FILE): readline.read_history_file(HIST_FILE)
     global autoclass
+    global _tracer
 
     if not autoclass:
         # first run
@@ -378,8 +399,10 @@ def repl(_expr=None, debug=False):
         print(WELCOME_MSG)
 
     while True:
+        if USE_TRACE and not _tracer:
+            _tracer = debugging.Trace(ignoredirs=['/usr', '/home/skeledrew/.local'])
         expr = readExpr()
-        result = evalExpr(expr)
+        result = evalExpr(expr) if not USE_TRACE else _tracer.runfunc(evalExpr, expr)
         if result == QUIT: break
         print(result)
     if USE_HIST in [1, 3]: readline.write_history_file(HIST_FILE)
@@ -398,6 +421,10 @@ def initEnv():
         for line in fo:
             cmd = readExpr(line)
             if cmd: evalExpr(cmd)
+    return
+
+def main():
+    repl()
     return
 
 if __name__ == '__main__':
