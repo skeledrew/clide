@@ -3,28 +3,22 @@
 '''
 
 #import constants
-from zlib import adler32 as hash_sum  # returns an int
+import pdb
+from pyshell import gen_name, hash_sum
 
 
 class Mind():
 
     def __init__(self):
-        global mind
-
-        if mind:
-            # single mind
-            del self
-            return
-        exec('mind = self')
         self._timeline = []
         self._thots = {}
 
     def register(self, thot):
-        self.timeline.append(thot)
-        self._thots[thot[t_name]] = thot
+        self._timeline.append(thot)
+        self._thots[thot.t_name] = thot
 
     def get_thots(self):
-        return _thots
+        return self._thots
 
 class Thought():
 
@@ -33,7 +27,7 @@ class Thought():
         self._concs = {}
         self._attribs = []
         self._mind = mind if mind else globals()['mind']
-        self.t_name = gen_name('thot-', 3, namespace=mind.get_thots())
+        self.t_name = gen_name('thot_', 3, namespace=mind.get_thots())
 
     def think(self, **kwargs):
         if self._done: return self._results()
@@ -46,17 +40,19 @@ class Thought():
                 # set all args as attributes. NB: will overwrite an existing attribute
                 if not key == 'attribs': exec('self._%s = kwargs[key]' % key)
                 exec('self._attribs.append("_%s")' % key)
-        self.t_name = self.t_name.replace('thot', 'thot-%d' % hash_sum(kwargs['content']))
+        self.t_name = self.t_name.replace('thot', 'thot_%d' % hash_sum(kwargs['content']))
         ## finish up
+        self._concs['name'] = self.t_name
+        self._concs['kwargs'] = kwargs
         self._dispatch()
         self._done = True
         return self._results()
 
     def _dispatch(self):
-        self.mind.register(self)
+        self._mind.register(self)
 
     def _links(self):
         pass
 
     def _results(self):
-        return _concs
+        return self._concs

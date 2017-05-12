@@ -29,12 +29,14 @@ import time
 import readline
 import logging
 import debugging
+from brain import *
+from zlib import adler32
 
 
 DEBUG = False
 MAJOR = 0
 MINOR = 0
-BUILD = 5
+BUILD = 7
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
@@ -62,6 +64,11 @@ cast = None
 _last_shell_result = None
 _last_prolog_result = None
 _tracer = None
+mind = None
+_multiline = False
+
+def hash_sum(data):
+    return adler32(bytes(data, 'utf-8'))
 
 def get_history_items():
     return [ readline.get_history_item(i)
@@ -93,6 +100,7 @@ class HistoryCompleter(object):
         logging.debug('complete(%s, %s) => %s', 
                       repr(text), state, repr(response))
         return response
+
 def loadText(path):
     text = ''
 
@@ -102,10 +110,13 @@ def loadText(path):
             text += line
     return text
 
-def evalPseudolang(cmd, debug=False):
-    pass
+def eval_pseudolog(cmd):
+    global mind
+    if not mind: mind = Mind()
+    result = Thought(mind).think(content=cmd)
+    return result
 
-def evalProlog(cmd, debug=False):
+def eval_prolog(cmd):
     if DEBUG: debug = True
     expList = [pexpect.EOF, pexpect.TIMEOUT, '\?-', '=']
     child = pexpect.spawnu('/bin/bash -c "swipl --quiet -s %s"' % KDBASE)
@@ -114,6 +125,7 @@ def evalProlog(cmd, debug=False):
     answered = False
 
     while True:
+        # interact with the process
         idx = child.expect(expList)
         time.sleep(0.5)
         #if debug: print('DBG: pexpect got |%s|' % loadText(TMP_FILE))
@@ -148,7 +160,7 @@ def evalProlog(cmd, debug=False):
             child.terminate()
             return None
 
-def gen_temp(pre='tmp', size=4, char='0'):
+def gen_name(pre='tmp', size=4, char='0', namespace=globals()):
     '''Generate a unique temporary global variable
 
 :parameters:
@@ -168,18 +180,17 @@ def gen_temp(pre='tmp', size=4, char='0'):
 
 .. changes:: <text>
 '''
-    global_ = globals()
     varname = ''
 
     for num in range(9999):
         # find a unique name
         varname = pre + str(num).rjust(size, char)
-        if varname in global_: continue
+        if varname in namespace: continue
         exec('global %s; %s = None' % (varname, varname))
         break
     return varname
 
-def jimport(jclass, name='', global_=True):
+def j_import(jclass, name='', global_=True):
     # import a Java class
     if not autoclass: raise Exception('Cannot import Java class without autoclass.')
 
@@ -281,7 +292,7 @@ def pesh(cmd, out=sys.stdout, shell='/bin/bash', debug=False):
                 return line
         return None
 
-def readExpr(cmd='', debug=False):
+def read_expr(cmd='', debug=False):
     # Reads an expression from stdin and does basic validation
     gotArg = True if cmd else False
 
@@ -294,12 +305,7 @@ def readExpr(cmd='', debug=False):
         break
     return cmd
 
-def evalExpr(_expr=None, level=0, debug=False):
-    # Recursively evaluates expression as a - nested - list of strings
-    expr = None if _expr == None else _expr[:]  # prevent recursive reference hell
-    #if DEBUG: debug = True
-    #if debug: print('DBG: processing nested, expr = %s, level = %d' % (str(expr), level))
-    cmd = ''
+def process_expr(expr, cmd=''):
 
     for item in expr:
         # process each list element at the current level
@@ -308,27 +314,50 @@ def evalExpr(_expr=None, level=0, debug=False):
         if type(item) == type([]):
             # process a nested list
             #if debug: print('DBG: level = %d' % level)
-            cmd += evalExpr(item, level=level+1) + ' '
+            cmd += eval_expr(item, level=level+1) + ' '
 
         else:
             cmd += item + ' '
+    return cmd
+
+def eval_expr(_expr=None, level=0, debug=False):
+    # Recursively evaluates expression as a - nested - list of strings
+    expr = None if _expr == None else _expr[:]  # prevent recursive reference hell
+    global _multiline
+    #global _lines
+    cmd = process_expr(expr) #if not multiline else expr
     cmd = cmd.strip()
-    #if debug: print('DBG: processed nest, cmd = |%s|' % cmd)
-    #if debug: print('DBG: expr = %s & level = %d' % (expr, level))
     if level == 0 and cmd == QUIT: return QUIT
     result = None
     success = False
+    accepted = ALPHA_LOWER + ' '
     if USE_PDB: pdb.set_trace()
 
     try:
 
-        #if expr and cmd == QUIT: return cmd
+        if cmd.endswith(CONJ) or cmd.endswith(DISJ):
+            # remain in multiline reader mode
+
+            if _multiline:
+                #_lines.append(cmd)
+                return cmd
+                success = True
+
+            else:
+                raise Exception('Expected preceding head sentence denoted by %s' % IFF)
+
+        if _multiline and not (cmd.endswith(CONJ) or cmd.endswith(DISJ)):
+            # read last line
+            #result = _lines.append(cmd)
+            _multiline = False
+            return cmd
+            success = True
 
         if cmd.startswith(OB) and cmd.endswith(CB):
             # top level enclosure
             pass
 
-        if cmd[0] == '>':
+        if not success and cmd[0] == '>':
             # execute as Python
 
             try:
@@ -342,7 +371,7 @@ def evalExpr(_expr=None, level=0, debug=False):
                 result = True
             success = True
 
-        if cmd[0] == '(':
+        if not success and cmd[0] == '(':
             # execute as Hy
             #if cmd[1] in '>$': return cmd  # not to be eval'd with Hy
             if not 'print' in cmd: cmd = '(print %s)' % cmd  # wrap with print to trigger return
@@ -350,7 +379,7 @@ def evalExpr(_expr=None, level=0, debug=False):
             #if debug: print('DBG: hy result = %s' % result)
             success = True
 
-        if cmd[0] == '$':
+        if not success and cmd[0] == '$':
             # execute as Shell
             result = pysh(cmd[1:].strip())
             global _last_shell_result
@@ -359,14 +388,12 @@ def evalExpr(_expr=None, level=0, debug=False):
             #if debug: print('DBG: shell result = %s' % result)
             success = True
 
-        if cmd[0] == '?' or cmd[-1] == '.':
+        if not success and cmd[0] == '?' or cmd[-1] == '.':
             # execute as Prolog; yields a boolean, string or list of bindings
             if cmd[0] == '?': cmd = cmd[1:].strip()
             if not cmd[-1] == '.': cmd += '.'
-            #if debug: print('cmd = "%s", KDBASE = %s' % (cmd, KDBASE))
             #result = pesh('swipl -s %s -g "%s" -t halt' % (KDBASE, cmd), 0)
-            raw = evalProlog(cmd)
-            #if debug: print('DBG: prolog raw result = %s' % raw)
+            raw = eval_prolog(cmd)
 
             if '\n' in raw:
                 # will prob always be true
@@ -399,27 +426,44 @@ def evalExpr(_expr=None, level=0, debug=False):
                 raise
             success = True
 
-        if cmd.strip().endswith(IFF):
-            # activate reader mode
-            isNatLang = False
-            accepted = ALPHA_LOWER + ' '
-            cmd = cmd.strip()[:-3]
+        if not _multiline and cmd.endswith(IFF):
+            # activate multiline reader mode for pseudolog directive
+
+            for char in cmd[:-3]:
+                # ensure all chars are valid
+
+                if not char in accepted:
+                    raise Exception('Invalid character detected. Command should only include "%s"' % accepted)
+            lines = [cmd]
+            _multiline = True
+
+            while _multiline:
+                # inner repl
+                line = eval_expr(read_expr())
+                lines.append(line)
+            #lines = ' '.join(lines)
+            result = eval_pseudolog(lines)
+            success = True
+
+        if not success:
+            # should be natural language
+            isAcceptable = False
 
             for char in cmd:
 
                 if not char in accepted:
-                    raise Exception('Invalid character detected. Command should only include "%s"' % accepted)
-            isNatLang = True
+                    isAcceptable = False
+                    break
+                isAcceptable = True
 
-        if cmd.strip().endswith(CONJ) or cmd.strip().endswith(DISJ):
-            # remain in reader mode
-            pass
+            if isAcceptable:
+                result = eval_pseudolog(cmd)
+                success = True
 
         if success: return str(result)
         print('Error: Unable to resolve "%s"; Check the command syntax.' % cmd)
 
     except Exception as e:
-        if DEBUG and USE_PDB: raise
         print('ExecError: ' + str(e))
         return str(None)
 
@@ -444,8 +488,8 @@ def repl(_expr=None, debug=False):
     while True:
         if USE_TRACE and not _tracer:
             _tracer = debugging.Trace(ignoremods=['debugging'], ignoredirs=['/usr', '/home/skeledrew/.local'])
-        expr = readExpr()
-        result = evalExpr(expr) if not USE_TRACE else _tracer.runfunc(evalExpr, expr)
+        expr = read_expr()
+        result = eval_expr(expr) if not USE_TRACE else _tracer.runfunc(eval_expr, expr)
         if result == QUIT: break
         print(result)
     if USE_HIST in [1, 3]: readline.write_history_file(HIST_FILE)
@@ -462,8 +506,8 @@ def initEnv():
     with open(INIT_FILE) as fo:
 
         for line in fo:
-            cmd = readExpr(line)
-            if cmd: evalExpr(cmd)
+            cmd = read_expr(line)
+            if cmd: eval_expr(cmd)
     return
 
 def main():

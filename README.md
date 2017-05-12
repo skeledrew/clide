@@ -35,7 +35,7 @@ on the desktop, internet, etc.
 - Hy commands must be in a single parens
   - '(+ 5 12)'
 - Access Java classes from Python
-  - '> global System; System = autoclass("java.lang.System")'
+  - '> jimport("java.lang.System")'
   - '> System.out.println("Hello from Java!")'
 - Add interesting classpaths to the init file (cannot be done at the repl)
   - '> JAVA_CLASS_PATH += ";/path/to/jar/files/*;/more/paths/*"' (note the extra quotes)
