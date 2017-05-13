@@ -24,6 +24,7 @@ on the desktop, internet, etc.
 - hy
 - swi-prolog
 - pyswip
+- fuzzywuzzy[speedup]
 - probably more...
 
 ### Usage
@@ -45,12 +46,20 @@ on the desktop, internet, etc.
   - '> prolog = Prolog(); prolog.assertz("father(michael,john)")'
 - Prepend pure Prolog commands with '?' or end with '.'
   - 'human(socrates).'
+- Append ' :=>' to a sentence/phrase to start a directive (note the space)
+  - 'tell time :=>'
+- Append ' &&&' (for logical and) or ' |||' (for logical or) to sentences/commands in a directive
+- A directive is completed when non of the latter 2 postfixes are used
+  - '> import time &&&'
+  - '> print(time.time())'
+- Run a directive by giving a sentence/phrase. The best matching stored directive will be sought
+  - 'tell me the time'
 - Report errors (I'm sure there are many :))
 
 ### Notes
 - Python code must use the global scope
 - Cannot do Python multiline block statements due to parser operation
-- Hy operations are enforced immutable, use as pure functions
+- Hy operations are enforced immutable,use as pure functions
 - Prolog is meant to manage the knowledge base
 - The print function is currently needed to simulate a return for Python statements and Hy
 - Cannot use regular parens with parser due to mangling of Python and Prolog functions

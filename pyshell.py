@@ -31,12 +31,13 @@ import logging
 import debugging
 from brain import *
 from zlib import adler32
+import inspect
 
 
 DEBUG = False
 MAJOR = 0
-MINOR = 0
-BUILD = 7
+MINOR = 1
+BUILD = 0
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
@@ -66,6 +67,13 @@ _last_prolog_result = None
 _tracer = None
 mind = None
 _multiline = False
+
+
+def members(itm):
+
+    for mem in inspect.getmembers(itm):
+        print(mem)
+    return
 
 def hash_sum(data):
     return adler32(bytes(data, 'utf-8'))
@@ -465,6 +473,8 @@ def eval_expr(_expr=None, level=0, debug=False):
 
     except Exception as e:
         print('ExecError: ' + str(e))
+        print('Activating pdb for post-mortem debugging...\n')
+        pdb.post_mortem()
         return str(None)
 
 def repl(_expr=None, debug=False):
