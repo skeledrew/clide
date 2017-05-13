@@ -473,8 +473,8 @@ def eval_expr(_expr=None, level=0, debug=False):
 
     except Exception as e:
         print('ExecError: ' + str(e))
-        print('Activating pdb for post-mortem debugging...\n')
-        pdb.post_mortem()
+        #print('Activating pdb for post-mortem debugging...\n')
+        #pdb.post_mortem()
         return str(None)
 
 def repl(_expr=None, debug=False):

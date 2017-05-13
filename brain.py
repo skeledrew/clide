@@ -131,6 +131,7 @@ Longer explanation that may take multiple lines...
         m_stats['top%s' % max_t] = process.extract(content, t_index, limit=max_t)
         self._match_stats = m_stats
         self._pot_acts = m_stats['top%s' % max_t]
+        if not self._pot_acts: raise Exception('I am unable to answer. Can you teach me?')
         self._act = Action(self, self._pot_acts[0][0])
         result = self._act.do()
         return result
