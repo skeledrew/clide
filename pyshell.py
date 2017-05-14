@@ -306,7 +306,7 @@ def eval_expr(_expr=None, level=0, debug=False):
             else:
                 # prob shouldn't get here
                 print('Why are we here???')
-                raise
+                raise Exception('I really doubt we should be here...')
             success = True
 
         if not _multiline and cmd.endswith(IFF):
@@ -365,16 +365,7 @@ def repl(_expr=None, debug=False):
     global autoclass
     global _tracer
 
-    if not autoclass:
-        # first run
-        global scp
-        scp = importlib.import_module('jnius_config').set_classpath
-        exec('scp("%s")' % JAVA_CLASS_PATH.replace(';', '","'), globals())
-        autoclass = importlib.import_module('jnius').autoclass
-        global cast
-        cast = importlib.import_module('jnius').cast
-        #if debug: print('DBG: autoclass = %s' % autoclass)
-        print(WELCOME_MSG)
+    print(WELCOME_MSG)
 
     while True:
         if USE_TRACE and not _tracer:

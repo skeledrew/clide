@@ -8,7 +8,11 @@ import inspect
 import readline
 import logging
 import importlib
+from constants import JAVA_CLASS_PATH
 
+
+autoclass = None
+cast = None
 
 def members(itm):
 
@@ -50,7 +54,7 @@ class HistoryCompleter(object):
                       repr(text), state, repr(response))
         return response
 
-def loadText(path):
+def load_text(path):
     text = ''
 
     with open(path) as f:
@@ -91,12 +95,23 @@ def gen_name(pre='tmp', size=4, char='0', namespace=globals()):
 
 def j_import(jclass, name='', global_=True):
     # import a Java class
-    if not autoclass: raise Exception('Cannot import Java class without autoclass.')
+    global autoclass
+
+    if not autoclass:
+        # first call
+        global scp
+        scp = load_module('jnius_config').set_classpath
+        exec('scp("%s")' % JAVA_CLASS_PATH.replace(';', '","'), globals())
+        autoclass = load_module('jnius').autoclass
+        global cast
+        cast = load_module('jnius').cast
+
+    #if not autoclass: raise Exception('Cannot import Java class without autoclass.')
 
     if not name: name = jclass.split('.')[-1] if '.' in jclass else jclass
     jclass = eval('autoclass("%s")' % (jclass))
     if global_: exec('global %s; %s = jclass' % (name, name))
-    return eval('name')
+    return jclass
 
 def load_module(mod):
     # load or reload a module. Currently broken
