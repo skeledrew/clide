@@ -1,10 +1,8 @@
-## ClIDE -- Command-line Integrated Development Environment
+## ClIDE -- Command-line Intelligent Development Environment
 
 ### Description
-ClIDE is essentially a Python interpreter that mixes different languages, including
-Hy, Shell, Java and eventually JavaScript and natural! The final aim is
-an interpreter that can take natural language and learn as well as perform actions
-on the desktop, internet, etc.
+ClIDE is essentially a multi-language interpreter that can interface with different languages including
+Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little assistance!). The final aim is an interpreter that can learn and act upon statements, commands and queries given in natural language. Action scope go from on the desktop to internet, etc. This will make it easier not only to develop apps, but to use computer resources in a more natural way.
 
 ### Installation
 - Install requirements (soon to be automated)
@@ -15,15 +13,16 @@ on the desktop, internet, etc.
 - Experiment!
 
 #### Requirements
-- python3
-- pexpect
-- sh
 - java
-- pyjnius
-- pyparsing
-- hy
 - swi-prolog
-- pyswip
+- python3
+- ---
+- pexpect
+- sh (for Shell access)
+- pyjnius (for Java access)
+- pyparsing
+- hy (for Hy access)
+- pyswip (for Prolog access)
 - fuzzywuzzy[speedup]
 - probably more...
 
@@ -36,7 +35,7 @@ on the desktop, internet, etc.
 - Hy commands must be in a single parens
   - '(+ 5 12)'
 - Access Java classes from Python
-  - '> jimport("java.lang.System")'
+  - '> j_import("java.lang.System")'
   - '> System.out.println("Hello from Java!")'
 - Add interesting classpaths to the init file (cannot be done at the repl)
   - '> JAVA_CLASS_PATH += ";/path/to/jar/files/*;/more/paths/*"' (note the extra quotes)

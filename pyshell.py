@@ -29,15 +29,17 @@ import time
 import readline
 import logging
 import debugging
-from brain import *
+#from brain import Mind, Thought, Action  # put in a function to avoid cycling
 from zlib import adler32
 import inspect
+from hy.cmdline import run_command as run_hy
+from contextlib import redirect_stdout
 
 
 DEBUG = False
 MAJOR = 0
 MINOR = 1
-BUILD = 0
+BUILD = 2
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
@@ -207,7 +209,7 @@ def j_import(jclass, name='', global_=True):
     if global_: exec('global %s; %s = jclass' % (name, name))
     return eval('name')
 
-def loadModule(mod):
+def load_module(mod):
     # load or reload a module. Currently broken
 
     try:
@@ -383,8 +385,12 @@ def eval_expr(_expr=None, level=0, debug=False):
             # execute as Hy
             #if cmd[1] in '>$': return cmd  # not to be eval'd with Hy
             if not 'print' in cmd: cmd = '(print %s)' % cmd  # wrap with print to trigger return
-            result = sh.hy('-c', cmd)
-            #if debug: print('DBG: hy result = %s' % result)
+            #result = sh.hy('-c', cmd)
+            sio = StringIO()
+
+            with redirect_stdout(sio):
+                run_hy(cmd)
+            result = sio.getvalue()
             success = True
 
         if not success and cmd[0] == '$':
@@ -473,12 +479,18 @@ def eval_expr(_expr=None, level=0, debug=False):
 
     except Exception as e:
         print('ExecError: ' + str(e))
-        #print('Activating pdb for post-mortem debugging...\n')
-        #pdb.post_mortem()
+        print('Activating pdb for post-mortem debugging...\n')
+        pdb.post_mortem()
         return str(None)
 
 def repl(_expr=None, debug=False):
     #if DEBUG: debug = True
+    #from brain import Mind, Thought, Action
+    global Mind, Thought, Action, mind
+    Mind = load_module('brain').Mind
+    Thought = load_module('brain').Thought
+    Action = load_module('brain').Action
+    mind = Mind()
     initEnv()
     if USE_HIST in [2, 3] and os.path.exists(HIST_FILE): readline.read_history_file(HIST_FILE)
     global autoclass

@@ -70,10 +70,10 @@ class Trace(trace.Trace):
             for var in self.watchlist:
                 func = '*'
 
-                if '.' in var:
+                if '-' in var:
                     # separate specific function
-                    func = var.split('.')[0]
-                    var = var.split('.')[1]
+                    func = var.split('-')[0]
+                    var = var.split('-')[1]
 
                 if var in line and var in frame_vars and (func == funcname or func == '*'):
                     # crude way to find if a var is about to be accessed

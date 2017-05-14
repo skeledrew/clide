@@ -9,6 +9,9 @@ from fuzzywuzzy import fuzz, process
 import inspect
 
 
+NO_POT_ACT = 'I am unable to answer. Can you teach me?'
+
+
 class Mind():
     '''Documentation template for classes and functions.
 
@@ -92,7 +95,6 @@ Longer explanation that may take multiple lines...
         self._concs = {}
         self._attribs = []
         self._mind = mind if mind else globals()['mind']
-        self.t_name = gen_name('thot_', 3, namespace=mind.get_thots())
         self._act = None
         return
 
@@ -110,7 +112,7 @@ Longer explanation that may take multiple lines...
         self._head = self._content.pop(0)[:-3].strip()
         self._body = self._content
         ## do some meta ops with kdb
-        return True
+        return 'I just learned something new!'
 
     def _handle_string(self, kwargs, max_t=3):
         # process a command
@@ -131,14 +133,25 @@ Longer explanation that may take multiple lines...
         m_stats['top%s' % max_t] = process.extract(content, t_index, limit=max_t)
         self._match_stats = m_stats
         self._pot_acts = m_stats['top%s' % max_t]
-        if not self._pot_acts: raise Exception('I am unable to answer. Can you teach me?')
-        self._act = Action(self, self._pot_acts[0][0])
+        if not self._pot_acts: return NO_POT_ACT
+        # FIXME: [1] need to check for a viable resolver, or maybe discard the thought
+        choice = ''
+
+        for c in self._pot_acts:
+            # find a suitable though with an action
+
+            if c[0][:-3] == self.t_name[:-3]:
+                # identical though; skip it (for now?)
+                continue
+            # add other undesirable checks
+            choice = c[0]
+        if not choice: return NO_POT_ACT
+        self._act = Action(self, choice)
         result = self._act.do()
         return result
 
     def think(self, **kwargs):
         if self._done: return self._results()
-        ## do thinking stuff here
         if not 'content' in kwargs: raise Exception('No content found.')
         self._kwargs = kwargs
 
@@ -149,14 +162,15 @@ Longer explanation that may take multiple lines...
                 if not key == 'attribs': exec('self._%s = kwargs[key]' % key)
                 exec('self._attribs.append("_%s")' % key)
         self.t_hash = hash_sum(str(kwargs['content']))  # hash of thought content, string or list
-        self.t_name = self.t_name.replace('thot', 'thot_%d' % self.t_hash)
+        self.t_name = gen_name('thot_%d_' % self.t_hash, 3, namespace=self._mind.get_thots())
+        #self.t_name = self.t_name.replace('thot', 'thot_%d' % self.t_hash)
         result = self._handle_types(kwargs)
         ## finish up
         self._concs['name'] = self.t_name
         self._concs['kwargs'] = kwargs
         self._dispatch()
         self._done = True
-        return self._results()
+        return result
 
     def _dispatch(self):
         self._mind.register(self)
