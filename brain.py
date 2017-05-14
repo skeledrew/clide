@@ -4,9 +4,11 @@
 
 #import constants
 import pdb
-from pyshell import gen_name, hash_sum, IFF, CONJ, DISJ, members, read_expr, eval_expr
+from pyshell import read_expr, eval_expr
 from fuzzywuzzy import fuzz, process
 import inspect
+from constants import *
+from utils import gen_name, hash_sum, members
 
 
 NO_POT_ACT = 'I am unable to answer. Can you teach me?'

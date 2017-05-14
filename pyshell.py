@@ -18,7 +18,6 @@ PyShell
 #from common import *
 import pexpect
 import sys
-import importlib, inspect
 import sh, shlex
 from pyparsing import nestedExpr
 import pdb
@@ -26,41 +25,13 @@ import os
 from pyswip import *
 from io import StringIO
 import time
-import readline
-import logging
 import debugging
 #from brain import Mind, Thought, Action  # put in a function to avoid cycling
-from zlib import adler32
-import inspect
 from hy.cmdline import run_command as run_hy
 from contextlib import redirect_stdout
+from constants import *
+from utils import *
 
-
-DEBUG = False
-MAJOR = 0
-MINOR = 1
-BUILD = 2
-OB = '<{'
-CB = '}>'
-QUIT = 'quit...'
-PROMPT = '_'
-JAVA_CLASS_PATH = '.;/home/skeledrew/Projects/htmlunit/2.26/lib/*'
-INIT_FILE = 'clide.init'
-WELCOME_MSG = 'Welcome to ClIDE, the Command-line IDE v%d.%d.%d\n' % (MAJOR, MINOR, BUILD)
-COMMENT = '#'
-INITD = False  # True if initialization file was successfully read
-KDBASE = 'clide.pl'
-USE_PDB = False
-TMP_FILE = 'clide.tmp'
-HIST_FILE = 'clide.hist'
-USE_HIST = 3  # 0 = none, 1 = save, 2 = load, 3 = all
-IFF = ':=>'  # separate pseudolog head and body
-CONJ = '&&&'  # conjunct 2 body parts
-DISJ = '|||'  # disjunct 2 body parts
-ALPHA_LOWER = ''.join([chr(i) for i in range(97, 123)])
-ALPHA_UPPER = ''.join([chr(i) for i in range(65, 91)])
-NUMBERS = ''.join([str(i) for i in range(0, 10)])
-USE_TRACE = False
 
 autoclass = None
 cast = None
@@ -71,58 +42,9 @@ mind = None
 _multiline = False
 
 
-def members(itm):
-
-    for mem in inspect.getmembers(itm):
-        print(mem)
-    return
-
-def hash_sum(data):
-    return adler32(bytes(data, 'utf-8'))
-
-def get_history_items():
-    return [ readline.get_history_item(i)
-             for i in xrange(1, readline.get_current_history_length() + 1)
-             ]
-
-class HistoryCompleter(object):
-
-    def __init__(self):
-        self.matches = []
-        return
-
-    def complete(self, text, state):
-        response = None
-        if state == 0:
-            history_values = get_history_items()
-            logging.debug('history: %s', history_values)
-            if text:
-                self.matches = sorted(h 
-                                      for h in history_values 
-                                      if h and h.startswith(text))
-            else:
-                self.matches = []
-            logging.debug('matches: %s', self.matches)
-        try:
-            response = self.matches[state]
-        except IndexError:
-            response = None
-        logging.debug('complete(%s, %s) => %s', 
-                      repr(text), state, repr(response))
-        return response
-
-def loadText(path):
-    text = ''
-
-    with open(path) as f:
-
-        for line in f:
-            text += line
-    return text
-
 def eval_pseudolog(cmd):
     global mind
-    if not mind: mind = Mind()
+    if not mind: mind = Mind() #if Mind else load_module('brain').Mind()
     result = Thought(mind).think(content=cmd)
     return result
 
@@ -169,59 +91,6 @@ def eval_prolog(cmd):
             print('Not sure if we should get here...')
             child.terminate()
             return None
-
-def gen_name(pre='tmp', size=4, char='0', namespace=globals()):
-    '''Generate a unique temporary global variable
-
-:parameters:
--  `name` (type) - <desc>
-
-:returns: <desc>
-:rtype:
-(str)
-
-:created: 17-05-11
-:modified: 17-05-11
-:author: <detail>
-
-.. notes:: <text>
-
-.. todo:: <text>
-
-.. changes:: <text>
-'''
-    varname = ''
-
-    for num in range(9999):
-        # find a unique name
-        varname = pre + str(num).rjust(size, char)
-        if varname in namespace: continue
-        exec('global %s; %s = None' % (varname, varname))
-        break
-    return varname
-
-def j_import(jclass, name='', global_=True):
-    # import a Java class
-    if not autoclass: raise Exception('Cannot import Java class without autoclass.')
-
-    if not name: name = jclass.split('.')[-1] if '.' in jclass else jclass
-    jclass = eval('autoclass("%s")' % (jclass))
-    if global_: exec('global %s; %s = jclass' % (name, name))
-    return eval('name')
-
-def load_module(mod):
-    # load or reload a module. Currently broken
-
-    try:
-        if DEBUG: print('DBG: Attempting to load ' + mod)
-        #import re
-        exec('importlib.reload(%s)' % mod, globals())
-
-    except Exception as e:
-        if DEBUG: print('DBG: Error: %s; Falling back to import' % str(e))
-        mod = eval('importlib.import_module(\'%s\')' % (mod))
-        return mod
-    return
 
 def pysh(cmd, debug=False):
     # takes a shell command as a string and runs it with shlex and sh
@@ -491,7 +360,7 @@ def repl(_expr=None, debug=False):
     Thought = load_module('brain').Thought
     Action = load_module('brain').Action
     mind = Mind()
-    initEnv()
+    init_env()
     if USE_HIST in [2, 3] and os.path.exists(HIST_FILE): readline.read_history_file(HIST_FILE)
     global autoclass
     global _tracer
@@ -517,7 +386,7 @@ def repl(_expr=None, debug=False):
     if USE_HIST in [1, 3]: readline.write_history_file(HIST_FILE)
     print('Goodbye cruel world :\'(')
 
-def initEnv():
+def init_env():
     # Initialize the environment with commands from a file
     readline.set_completer(HistoryCompleter().complete)
     readline.parse_and_bind('tab: complete')
