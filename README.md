@@ -30,7 +30,7 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - PyAudio
 - SpeechRecognition
 - PocketSphinx
-- probably more...
+- likely more...
 
 ### Usage
 - Enter 'quit...' to quit
