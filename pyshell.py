@@ -32,6 +32,7 @@ from contextlib import redirect_stdout
 from constants import *
 from utils import *
 from fingers import Finger
+from ears import Ear
 
 
 autoclass = None

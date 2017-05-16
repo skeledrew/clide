@@ -27,6 +27,9 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - fuzzywuzzy[speedup]
 - pynput
 - autokey
+- PyAudio
+- SpeechRecognition
+- PocketSphinx
 - probably more...
 
 ### Usage
@@ -57,7 +60,9 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - Run a directive by giving a sentence/phrase. The best matching stored directive will be sought
   - 'tell me the time'
 - Simulate keyboard and mouse action via Finger
-  - > finger = Finger(); finger.click(); finger.type('things are getting more interesting!')
+  - '> finger = Finger(); finger.click(); finger.type('things are getting more interesting!')'
+- Get speech input via Ear (uses PocketSphinx)
+  - '> Ear().listen()'
 - Report errors (I'm sure there are many :))
 
 ### Notes
