@@ -22,6 +22,7 @@
 
 
 import speech_recognition as sr
+from utils import noalsaerr
 
 
 class Ear():
@@ -37,7 +38,7 @@ class Ear():
         self._audio = None
         self._text = None
 
-        with sr.Microphone() as source:
+        with noalsaerr() as n, sr.Microphone() as source:
             self._recog.adjust_for_ambient_noise(source)
             print('I\'m listening...')
             self._audio = self._recog.listen(source)
