@@ -57,7 +57,7 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - Run a directive by giving a sentence/phrase. The best matching stored directive will be sought
   - 'tell me the time'
 - Simulate keyboard and mouse action via Finger
-  - > finger.click(); finger.type('things are getting more interesting!')
+  - > finger = Finger(); finger.click(); finger.type('things are getting more interesting!')
 - Report errors (I'm sure there are many :))
 
 ### Notes
