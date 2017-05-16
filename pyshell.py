@@ -31,6 +31,7 @@ from hy.cmdline import run_command as run_hy
 from contextlib import redirect_stdout
 from constants import *
 from utils import *
+from fingers import Finger
 
 
 autoclass = None
@@ -40,7 +41,48 @@ _last_prolog_result = None
 _tracer = None
 mind = None
 _multiline = False
+prolog = None
 
+
+def eval_prolog_with_pyswip(cmd):
+    # use the pyswip methods for evaluation
+    #   faster and cleaner, but less flexible
+    global prolog
+    if not prolog: prolog = Prolog()
+    result = None
+    cmd = cmd.strip()  # make it easier to search
+    if cmd[-1] == '.': cmd = cmd[:-1]  # remove the period
+    #cmd = cmd[:-1] + '.)'  # insert a period befor last parens
+
+    if cmd.startswith('asserta'):
+        assn = cmd[8:-1]
+        result = prolog.asserta(cmd)
+
+    elif cmd.startswith('assertz'):
+        assn = cmd[8:-1]
+        result = prolog.assertz(cmd)
+
+    elif cmd.startswith('retract'):
+        assn = cmd[8:-1]
+        result = prolog.retract(cmd)
+
+    elif cmd.startswith('retractall'):
+        assn = cmd[11:-1]
+        result = prolog.retractall(cmd)
+
+    elif cmd.startswith('dynamic'):
+        #cmd = cmd[:-2] + ')'
+        assn = cmd[8:-1]
+        result = prolog.dynamic(cmd)
+
+    elif cmd.startswith('consult'):
+        assn = cmd[8:-1]
+        result = prolog.consult(cmd)
+
+    else:
+        #assn = cmd[6:-1]
+        result = prolog.query(cmd)
+    return 'true.' if result == {} else 'false.' if result == None else result
 
 def eval_pseudolog(cmd):
     global mind
@@ -48,13 +90,14 @@ def eval_pseudolog(cmd):
     result = Thought(mind).think(content=cmd)
     return result
 
-def eval_prolog(cmd):
+def eval_prolog_with_pexpect(cmd):
     if DEBUG: debug = True
     expList = [pexpect.EOF, pexpect.TIMEOUT, '\?-', '=']
-    child = pexpect.spawnu('/bin/bash -c "swipl --quiet -s %s"' % KDBASE)
+    child = pexpect.spawnu('/bin/bash -c "swipl --quiet --nosignals -s %s"' % KDBASE)
     child.logfile_read = open(TMP_FILE, 'w')
     asked = False
     answered = False
+    raw = ''
 
     while True:
         # interact with the process
@@ -72,7 +115,8 @@ def eval_prolog(cmd):
         if idx == 2 and asked:
             # at another prompt
             #if debug: print('DBG: another prompt...')
-            return loadText(TMP_FILE)
+            raw = load_text(TMP_FILE)
+            break
 
         if idx == 13:
             # prob got all the result. NB: should be #3 targetting '.' but currently works w/out
@@ -91,6 +135,36 @@ def eval_prolog(cmd):
             print('Not sure if we should get here...')
             child.terminate()
             return None
+
+    if True:
+            # TODO: decrease indents and remove useless if
+            if '\n' in raw:
+                # will prob always be true
+                raw = raw.split('\n')
+                rare = []
+                done = ''
+
+                for line in raw:
+                    # get rid of the chaff
+                    if line.startswith('?-') or line.startswith('|') or len(line.strip()) < 3: continue
+                    done += line + '\n'
+
+                    if ' = ' in line:
+                        # binding; TODO: upgrate to intelligent detection
+                        line = line.split(' = ')
+                        if line[1][-1] == ';' or line[1][-1] == '.': line[1] = line[1][:-1].strip()
+                        rare.append({line[0]: line[1]})
+
+                    else:
+                        # other returns
+                        rare.append(line[:-1].strip())
+                result = rare if len(rare) > 1 else rare[0]  # return list or single
+                return clean_ansi(result)
+
+            else:
+                # prob shouldn't get here
+                print('Why are we here???')
+                raise Exception('I really doubt we should be here...')
 
 def pysh(cmd, debug=False):
     # takes a shell command as a string and runs it with shlex and sh
@@ -241,18 +315,19 @@ def eval_expr(_expr=None, level=0, debug=False):
 
             try:
                 result = eval(cmd[1:].strip())
-                #if debug: print('DBG: python eval\'d %s and got %s' % (cmd, result))
-                if not result: result = True
+                #if not result: result = True
 
             except:
-                exec(cmd[1:].strip(), globals())
-                #if debug: print('DBG: exec\'d %s' % cmd)
-                result = True
+                sio = StringIO()
+
+                with redirect_stdout(sio):
+                    exec(cmd[1:].strip(), globals())
+                result = sio.getvalue()
             success = True
 
         if not success and cmd[0] == '(':
             # execute as Hy
-            #if cmd[1] in '>$': return cmd  # not to be eval'd with Hy
+            #if cmd[1] in '>$?': return cmd  # not to be eval'd with Hy
             if not 'print' in cmd: cmd = '(print %s)' % cmd  # wrap with print to trigger return
             #result = sh.hy('-c', cmd)
             sio = StringIO()
@@ -276,37 +351,9 @@ def eval_expr(_expr=None, level=0, debug=False):
             if cmd[0] == '?': cmd = cmd[1:].strip()
             if not cmd[-1] == '.': cmd += '.'
             #result = pesh('swipl -s %s -g "%s" -t halt' % (KDBASE, cmd), 0)
-            raw = eval_prolog(cmd)
-
-            if '\n' in raw:
-                # will prob always be true
-                raw = raw.split('\n')
-                rare = []
-                done = ''
-
-                for line in raw:
-                    # get rid of the chaff
-                    if line.startswith('?-') or line.startswith('|') or len(line.strip()) < 3: continue
-                    done += line + '\n'
-
-                    if ' = ' in line:
-                        # binding; TODO: upgrate to intelligent detection
-                        line = line.split(' = ')
-                        if line[1][-1] == ';' or line[1][-1] == '.': line[1] = line[1][:-1].strip()
-                        rare.append({line[0]: line[1]})
-
-                    else:
-                        # other returns
-                        rare.append(line[:-1].strip())
-                result = rare if len(rare) > 1 else rare[0]  # return list or single
-                result = done.strip()  # (alt) return string w/out final newline
-                global _last_prolog_result
-                _last_prolog_result = result
-
-            else:
-                # prob shouldn't get here
-                print('Why are we here???')
-                raise Exception('I really doubt we should be here...')
+            result = eval_prolog_with_pexpect(cmd)
+            global _last_prolog_result
+            _last_prolog_result = result
             success = True
 
         if not _multiline and cmd.endswith(IFF):

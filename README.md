@@ -16,6 +16,7 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - java
 - swi-prolog
 - python3
+- libdbus-glib-1-dev (for autohotkey)
 - ---
 - pexpect
 - sh (for Shell access)
@@ -24,6 +25,8 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - hy (for Hy access)
 - pyswip (for Prolog access)
 - fuzzywuzzy[speedup]
+- pynput
+- autokey
 - probably more...
 
 ### Usage

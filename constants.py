@@ -6,7 +6,7 @@
 DEBUG = False
 MAJOR = 0
 MINOR = 1
-BUILD = 2
+BUILD = 3
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'

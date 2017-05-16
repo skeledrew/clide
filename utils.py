@@ -114,7 +114,7 @@ def j_import(jclass, name='', global_=True):
     return jclass
 
 def load_module(mod):
-    # load or reload a module. Currently broken
+    # load or reload a module
 
     try:
         #import re
@@ -125,3 +125,6 @@ def load_module(mod):
         return mod
     return
 
+def clean_ansi(text, remove=''):
+    # use a regex to remove ANSI control codes
+    return text
