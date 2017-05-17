@@ -16,8 +16,8 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - java
 - swi-prolog
 - python3
-- libdbus-glib-1-dev (for autohotkey)
-- ---
+- libdbus-glib-1-dev (for autokey)
+- -
 - pexpect
 - sh (for Shell access)
 - pyjnius (for Java access)
@@ -62,7 +62,7 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - Simulate keyboard and mouse action via Finger
   - '> finger = Finger(); finger.click(); finger.type('things are getting more interesting!')'
 - Get speech input via Ear (uses PocketSphinx)
-  - '> Ear().listen()'
+  - '> text = Ear().listen()'
 - Report errors (I'm sure there are many :))
 
 ### Notes
@@ -76,11 +76,11 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - The global variables '_last_shell_result' and '_last_shell_result' can be used for issues with using nested Shell and Prolog
 
 ### ToDo
-- Add natural language
 - Add logging
 - Add JS via Rhino/Nashorn
 - Setup script
 - Autodetect lang without identifier use
+- Connect fingers and ears into brain
 
 ### Doc Template
 '''Documentation template for classes and functions.

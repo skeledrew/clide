@@ -29,6 +29,7 @@ import importlib
 from constants import JAVA_CLASS_PATH
 from ctypes import *
 from contextlib import contextmanager
+import functools
 
 
 autoclass = None
@@ -163,3 +164,29 @@ def noalsaerr():
     asound.snd_lib_error_set_handler(c_error_handler)
     yield
     asound.snd_lib_error_set_handler(None)
+
+class Hook():
+
+    @staticmethod
+    def pre_func(func, pre):
+
+        @functools.wraps(func)
+        def run(*args, **kwargs):
+            pre(*args, **kwargs)
+            return func(*args, **kwargs)
+        return run
+
+    @staticmethod
+    def post_func(func, post):
+
+        @functools.wraps(func)
+        def run(*args, **kwargs):
+            result = func(*args, **kwargs)
+            post(*args, **kwargs)
+            return result
+        return run
+
+    @staticmethod
+    def set(orig, mod, where):
+        orig = where(orig, mod)
+        return orig

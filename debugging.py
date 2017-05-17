@@ -21,35 +21,8 @@
 '''
 
 import trace
-import functools
 import linecache
 
-
-class Hook():
-
-    @staticmethod
-    def pre_func(func, pre):
-
-        @functools.wraps(func)
-        def run(*args, **kwargs):
-            pre(*args, **kwargs)
-            return func(*args, **kwargs)
-        return run
-
-    @staticmethod
-    def post_func(func, post):
-
-        @functools.wraps(func)
-        def run(*args, **kwargs):
-            result = func(*args, **kwargs)
-            post(*args, **kwargs)
-            return result
-        return run
-
-    @staticmethod
-    def set(orig, mod, where):
-        orig = where(orig, mod)
-        return orig
 
 class Trace(trace.Trace):
     watchlist = {}

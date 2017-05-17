@@ -44,13 +44,13 @@ from pyswip import *
 from io import StringIO
 import time
 import debugging
-#from brain import Mind, Thought, Action  # put in a function to avoid cycling
 from hy.cmdline import run_command as run_hy
 from contextlib import redirect_stdout
 from constants import *
 from utils import *
 from fingers import Finger
 from ears import Ear
+from hy_hooks import HyBridge, HyREPL, run_repl
 
 
 autoclass = None
@@ -296,7 +296,6 @@ def eval_expr(_expr=None, level=0, debug=False):
     # Recursively evaluates expression as a - nested - list of strings
     expr = None if _expr == None else _expr[:]  # prevent recursive reference hell
     global _multiline
-    #global _lines
     cmd = process_expr(expr) #if not multiline else expr
     cmd = cmd.strip()
     if level == 0 and cmd == QUIT: return QUIT
@@ -419,8 +418,6 @@ def eval_expr(_expr=None, level=0, debug=False):
         return str(None)
 
 def repl(_expr=None, debug=False):
-    #if DEBUG: debug = True
-    #from brain import Mind, Thought, Action
     global Mind, Thought, Action, mind
     Mind = load_module('brain').Mind
     Thought = load_module('brain').Thought
@@ -459,8 +456,9 @@ def init_env():
     return
 
 def main():
-    repl()
+    run_repl(read_expr, eval_expr)
     return
 
 if __name__ == '__main__':
+    #main()
     repl()

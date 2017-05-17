@@ -28,3 +28,4 @@ ALPHA_LOWER = ''.join([chr(i) for i in range(97, 123)])
 ALPHA_UPPER = ''.join([chr(i) for i in range(65, 91)])
 NUMBERS = ''.join([str(i) for i in range(0, 10)])
 USE_TRACE = False
+EXIT_MSG = 'Goodbye cruel world :\'('
