@@ -80,6 +80,7 @@ class Ear():
         except Exception as e:
             print('Error: unable to answer; %s' % str(e))
             return None
+        self._text = result
         return result
 
     def _post_process_text(self, accepted=constants.ACCEPTED):
