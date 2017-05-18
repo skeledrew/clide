@@ -51,6 +51,7 @@ from utils import *
 from fingers import Finger
 from ears import Ear
 from hy_hooks import HyBridge, HyREPL, run_repl
+import constants
 
 
 autoclass = None
@@ -278,12 +279,13 @@ def read_expr(cmd='', debug=False):
     return cmd
 
 def process_expr(expr, cmd=''):
+    if isinstance(expr, str): return expr
 
     for item in expr:
         # process each list element at the current level
         #if debug: print('DBG: item = %s' % item)
 
-        if type(item) == type([]):
+        if isinstance(item, list):
             # process a nested list
             #if debug: print('DBG: level = %d' % level)
             cmd += eval_expr(item, level=level+1) + ' '
@@ -295,14 +297,15 @@ def process_expr(expr, cmd=''):
 def eval_expr(_expr=None, level=0, debug=False):
     # Recursively evaluates expression as a - nested - list of strings
     expr = None if _expr == None else _expr[:]  # prevent recursive reference hell
+    if not expr: return None  # short circuit no input
     global _multiline
     cmd = process_expr(expr) #if not multiline else expr
     cmd = cmd.strip()
     if level == 0 and cmd == QUIT: return QUIT
     result = None
     success = False
-    accepted = ALPHA_LOWER + ' '
-    if USE_PDB: pdb.set_trace()
+    accepted = constants.ACCEPTED
+    if constants.USE_PDB: pdb.set_trace()
 
     try:
 
@@ -332,7 +335,7 @@ def eval_expr(_expr=None, level=0, debug=False):
             # execute as Python
 
             try:
-                result = eval(cmd[1:].strip())
+                result = eval(cmd[1:].strip(), globals())
                 #if not result: result = True
 
             except:
@@ -415,7 +418,7 @@ def eval_expr(_expr=None, level=0, debug=False):
         print('ExecError: ' + str(e))
         print('Activating pdb for post-mortem debugging...\n')
         pdb.post_mortem()
-        return str(None)
+        return None
 
 def repl(_expr=None, debug=False):
     global Mind, Thought, Action, mind
@@ -432,7 +435,7 @@ def repl(_expr=None, debug=False):
 
     while True:
         if USE_TRACE and not _tracer:
-            _tracer = debugging.Trace(ignoremods=['debugging'], ignoredirs=['/usr', '/home/skeledrew/.local'])
+            _tracer = debugging.Trace(ignoremods=['debugging', 'utils'], ignoredirs=['/usr', '/home/skeledrew/.local'])
         expr = read_expr()
         result = eval_expr(expr) if not USE_TRACE else _tracer.runfunc(eval_expr, expr)
         if result == QUIT: break

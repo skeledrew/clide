@@ -6,7 +6,7 @@
 DEBUG = False
 MAJOR = 0
 MINOR = 1
-BUILD = 3
+BUILD = 4
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
@@ -29,3 +29,7 @@ ALPHA_UPPER = ''.join([chr(i) for i in range(65, 91)])
 NUMBERS = ''.join([str(i) for i in range(0, 10)])
 USE_TRACE = False
 EXIT_MSG = 'Goodbye cruel world :\'('
+EARS_LISTENING = 'I\'m all ears...'
+EARS_UNDERSTANDING = 'Trying to understand audio!'
+LUAL_QUIT = 'finish'
+ACCEPTED = ALPHA_LOWER + ' '

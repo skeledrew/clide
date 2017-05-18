@@ -39,9 +39,9 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - Prepend Python commands with '>'
   - '> global myvar; myvar = 13'
 - Hy commands must be in a single parens
-  - '(+ 5 12)'
+  - '(setv yvar (+ 5 12))'
 - Access Java classes from Python
-  - '> j_import("java.lang.System")'
+  - '> System = j_import("java.lang.System")'
   - '> System.out.println("Hello from Java!")'
 - Add interesting classpaths to the init file (cannot be done at the repl)
   - '> JAVA_CLASS_PATH += ";/path/to/jar/files/*;/more/paths/*"' (note the extra quotes)
@@ -61,8 +61,12 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
   - 'tell me the time'
 - Simulate keyboard and mouse action via Finger
   - '> finger = Finger(); finger.click(); finger.type('things are getting more interesting!')'
-- Get speech input via Ear (uses PocketSphinx)
-  - '> text = Ear().listen()'
+- Get speech input via Ear (currently uses only PocketSphinx, which isn't very good)
+  - '> ear = Ear(); text = ear.listen()'
+- Start a lual (Listen-Understand-Answer loop)
+  - '> Ear(eval_expr).lual()' (uses 'eval_expr' to answer)
+  - Say 'finish' (default) to exit the lual
+- Fun exercise: add a few directives to, start a lual and call quit in 'clide.init' :D
 - Report errors (I'm sure there are many :))
 
 ### Notes

@@ -30,6 +30,7 @@ from utils import gen_name, hash_sum, members
 
 
 NO_POT_ACT = 'I am unable to answer. Can you teach me?'
+BAD_POT_ACT = 'I thought I understood that, but I didn\'t...'
 
 
 class Mind():
@@ -120,11 +121,11 @@ Longer explanation that may take multiple lines...
 
     def _handle_types(self, kwargs):
         c_type = type(kwargs['content'])
-        c_types = [type([]), type('')] if not 'c_types' in kwargs else kwargs['c_types']
+        c_types = [list, str] if not 'c_types' in kwargs else kwargs['c_types']
         if not c_type in c_types: raise Exception('Bad content type.')
         result = None
-        if c_type == c_types[0]: result = self._handle_list(kwargs)
-        if c_type == c_types[1]: result = self._handle_string(kwargs)
+        if c_type == list: result = self._handle_list(kwargs)
+        if c_type == str: result = self._handle_string(kwargs)
         return result
 
     def _handle_list(self, kwargs):
@@ -160,8 +161,13 @@ Longer explanation that may take multiple lines...
         for c in self._pot_acts:
             # find a suitable though with an action
 
-            if c[0][:-3] == self.t_name[:-3]:
-                # identical though; skip it (for now?)
+            '''if c[0][:-3] == self.t_name[:-3]:
+                # identical thought; skip it (for now?)
+                continue'''
+            pot_targ_thot = self._mind.get_thots([c[0]])[c[0]]
+
+            if not type(pot_targ_thot.think()['kwargs']['content']) == list:
+                # doesn't have actionable content
                 continue
             # add other undesirable checks
             choice = c[0]
@@ -212,6 +218,10 @@ class Action():
         targ_thot = thot._mind.get_thots([targ_thot_name])[targ_thot_name]
         self._conc = targ_thot.think()
         self._body = self._conc['kwargs']['content']  # body of a directive
+
+        if not type(self._body) == list:
+            # no action available; prob obselete
+            self._body = None
         self._command = thot._head  # current command
         self._head = targ_thot._head  # head of a directive
 
@@ -221,6 +231,10 @@ class Action():
     def do(self):
         # execute the commands
         body = self._body
+        if not body:
+            # should be obselete
+            print(BAT_POT_ACT)
+            return None
         head = self._head
         result = None
         partial = None
