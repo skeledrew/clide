@@ -1,3 +1,4 @@
+# This file is part of ClIDE
 # ClIDE - A live-modifiable command-line IDE that can accept commands as pseudocode  
 
 # @author Andrew Phillips  

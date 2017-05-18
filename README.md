@@ -6,6 +6,7 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 
 ### Installation
 - Install requirements (soon to be automated)
+- Clone the repo
 - Edit JAVA_HOME in 'clide' to point to your install
 - Make executable with 'chmod +x clide'
 - Create an init file 'clide.init'

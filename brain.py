@@ -1,3 +1,4 @@
+# This file is part of ClIDE
 # ClIDE - A live-modifiable command-line IDE that can accept commands as pseudocode  
 
 # @author Andrew Phillips  
@@ -29,7 +30,7 @@ from constants import *
 from utils import gen_name, hash_sum, members
 
 
-NO_POT_ACT = 'I am unable to answer. Can you teach me?'
+NO_POT_ACT = 'I am unable to answer to "%s". Can you teach me?'
 BAD_POT_ACT = 'I thought I understood that, but I didn\'t...'
 
 
@@ -154,7 +155,7 @@ Longer explanation that may take multiple lines...
         m_stats['top%s' % max_t] = process.extract(content, t_index, limit=max_t)
         self._match_stats = m_stats
         self._pot_acts = m_stats['top%s' % max_t]
-        if not self._pot_acts: return NO_POT_ACT
+        if not self._pot_acts: return NO_POT_ACT % content
         # FIXME: [1] need to check for a viable resolver, or maybe discard the thought
         choice = ''
 
@@ -171,7 +172,7 @@ Longer explanation that may take multiple lines...
                 continue
             # add other undesirable checks
             choice = c[0]
-        if not choice: return NO_POT_ACT
+        if not choice: return NO_POT_ACT % content
         self._act = Action(self, choice)
         result = self._act.do()
         return result
