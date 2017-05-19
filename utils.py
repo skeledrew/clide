@@ -31,6 +31,7 @@ from constants import JAVA_CLASS_PATH
 from ctypes import *
 from contextlib import contextmanager
 import functools
+import re
 
 
 autoclass = None
@@ -148,8 +149,15 @@ def load_module(mod):
     return
 
 def clean_ansi(text, remove=''):
-    # use a regex to remove ANSI control codes
-    return text
+    # remove ANSI control codes
+    n_text = text
+    targets = [''.join([chr(cde) for cde in [27, 91, 67]]),
+               ''.join([chr(cde) for cde in [27, 91, 48, 109]]),
+               ''.join([chr(cde) for cde in [27, 91, 49, 109]])]
+
+    for target in targets:
+        n_text = n_text.replace(target, '')
+    return n_text
 
 ### Handles ALSA error messages ###
 ERROR_HANDLER_FUNC = CFUNCTYPE(None, c_char_p, c_int, c_char_p, c_int, c_char_p)
