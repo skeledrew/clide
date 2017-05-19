@@ -18,19 +18,20 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - swi-prolog
 - python3
 - libdbus-glib-1-dev (for autokey)
+- libpulse-dev
 - -
 - pexpect
 - sh (for Shell access)
+- Cython
 - pyjnius (for Java access)
 - pyparsing
 - hy (for Hy access)
-- pyswip (for Prolog access)
+- pyswip (0.2.3; for Prolog access)
 - fuzzywuzzy[speedup]
 - pynput
-- autokey
 - PyAudio
+- pocketsphinx
 - SpeechRecognition
-- PocketSphinx
 - likely more...
 
 ### Usage
