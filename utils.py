@@ -150,14 +150,9 @@ def load_module(mod):
 
 def clean_ansi(text, remove=''):
     # remove ANSI control codes
-    n_text = text
-    targets = [''.join([chr(cde) for cde in [27, 91, 67]]),
-               ''.join([chr(cde) for cde in [27, 91, 48, 109]]),
-               ''.join([chr(cde) for cde in [27, 91, 49, 109]])]
-
-    for target in targets:
-        n_text = n_text.replace(target, '')
-    return n_text
+    ANSI_CLEANER = re.compile(r"(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]")
+    clean_text = ANSI_CLEANER.sub("", text)
+    return clean_text
 
 ### Handles ALSA error messages ###
 ERROR_HANDLER_FUNC = CFUNCTYPE(None, c_char_p, c_int, c_char_p, c_int, c_char_p)

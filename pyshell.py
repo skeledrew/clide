@@ -176,7 +176,7 @@ def eval_prolog_with_pexpect(cmd):
 
                     else:
                         # other returns
-                        rare.append(line[:-1].strip())
+                        rare.append(line.strip())
                 result = rare if len(rare) > 1 else rare[0]  # return list or single
                 return result
 
