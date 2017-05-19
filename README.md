@@ -22,16 +22,16 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - -
 - pexpect
 - sh (for Shell access)
-- Cython
 - pyjnius (for Java access)
 - pyparsing
 - hy (for Hy access)
-- pyswip (0.2.3; for Prolog access)
+- pyswip (for Prolog access)
 - fuzzywuzzy[speedup]
 - pynput
+- autokey
 - PyAudio
-- pocketsphinx
 - SpeechRecognition
+- PocketSphinx
 - likely more...
 
 ### Usage

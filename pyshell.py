@@ -124,24 +124,20 @@ def eval_prolog_with_pexpect(cmd):
         # interact with the process
         idx = child.expect(expList)
         time.sleep(0.5)
-        #if debug: print('DBG: pexpect got |%s|' % loadText(TMP_FILE))
 
         if idx == 2 and not asked:
             # at prompt
-            #if debug: print('DBG: got a prompt!')
             child.sendline(cmd)
             asked = True
             continue
 
         if idx == 2 and asked:
             # at another prompt
-            #if debug: print('DBG: another prompt...')
             raw = load_text(TMP_FILE)
             break
 
         if idx == 13:
             # prob got all the result. NB: should be #3 targetting '.' but currently works w/out
-            #if debug: print('DBG: got dot in |%s|' % loadText(TMP_FILE))
             child.sendline('halt.')
             #return loadText(TMP_FILE)
 
@@ -159,6 +155,8 @@ def eval_prolog_with_pexpect(cmd):
 
     if True:
             # TODO: decrease indents and remove useless if
+            raw = clean_ansi(raw)
+
             if '\n' in raw:
                 # will prob always be true
                 raw = raw.split('\n')
@@ -171,7 +169,7 @@ def eval_prolog_with_pexpect(cmd):
                     done += line + '\n'
 
                     if ' = ' in line:
-                        # binding; TODO: upgrate to intelligent detection
+                        # binding; TODO: upgrade to intelligent detection
                         line = line.split(' = ')
                         if line[1][-1] == ';' or line[1][-1] == '.': line[1] = line[1][:-1].strip()
                         rare.append({line[0]: line[1]})
@@ -180,7 +178,7 @@ def eval_prolog_with_pexpect(cmd):
                         # other returns
                         rare.append(line[:-1].strip())
                 result = rare if len(rare) > 1 else rare[0]  # return list or single
-                return clean_ansi(result)
+                return result
 
             else:
                 # prob shouldn't get here
