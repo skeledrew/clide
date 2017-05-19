@@ -277,16 +277,15 @@ def read_expr(cmd='', debug=False):
         break
     return cmd
 
-def process_expr(expr, cmd=''):
+def process_expr(expr, level=0):
     if isinstance(expr, str): return expr
+    cmd = ''
 
     for item in expr:
         # process each list element at the current level
-        #if debug: print('DBG: item = %s' % item)
 
         if isinstance(item, list):
             # process a nested list
-            #if debug: print('DBG: level = %d' % level)
             cmd += eval_expr(item, level=level+1) + ' '
 
         else:
@@ -298,7 +297,7 @@ def eval_expr(_expr=None, level=0, debug=False):
     expr = None if _expr == None else _expr[:]  # prevent recursive reference hell
     if not expr: return None  # short circuit no input
     global _multiline
-    cmd = process_expr(expr) #if not multiline else expr
+    cmd = process_expr(expr, level) #if not multiline else expr
     cmd = cmd.strip()
     if level == 0 and cmd == QUIT: return QUIT
     result = None
