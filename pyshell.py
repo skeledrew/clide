@@ -113,17 +113,17 @@ def eval_pseudolog(cmd):
 
 def eval_prolog_with_pexpect(cmd):
     if DEBUG: debug = True
-    expList = [pexpect.EOF, pexpect.TIMEOUT, '\?-', '=']
-    child = pexpect.spawnu('/bin/bash -c "swipl --quiet --nosignals -s %s"' % KDBASE)
-    child.logfile_read = open(TMP_FILE, 'w')
+    exp_list = [pexpect.EOF, pexpect.TIMEOUT, '\?-', '=']
+    child = pexpect.spawnu('/bin/bash -c "swipl --quiet --nosignals -s %s"' % constants.KDBASE)
+    child.logfile_read = open(constants.TMP_FILE, 'w')
     asked = False
     answered = False
     raw = ''
 
     while True:
         # interact with the process
-        idx = child.expect(expList)
-        time.sleep(0.5)
+        idx = child.expect(exp_list)
+        #time.sleep(0.3)
 
         if idx == 2 and not asked:
             # at prompt
@@ -133,7 +133,7 @@ def eval_prolog_with_pexpect(cmd):
 
         if idx == 2 and asked:
             # at another prompt
-            raw = load_text(TMP_FILE)
+            raw = load_text(constants.TMP_FILE)
             break
 
         if idx == 13:
@@ -286,7 +286,7 @@ def process_expr(expr, level=0):
 
         if isinstance(item, list):
             # process a nested list
-            cmd += eval_expr(item, level=level+1) + ' '
+            cmd += str(eval_expr(item, level=level+1)) + ' '
 
         else:
             cmd += item + ' '

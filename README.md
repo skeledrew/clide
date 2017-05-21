@@ -48,7 +48,7 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - Add interesting classpaths to the init file (cannot be done at the repl)
   - '> JAVA_CLASS_PATH += ";/path/to/jar/files/*;/more/paths/*"' (note the extra quotes)
 - Nest multiple langs with '<{' and '}>'
-  - '> myvar = <{(/ 100 31)}>
+  - '> myvar = <{(/ 100 31)}>'
 - Access Prolog from Python (via pyswip)
   - '> prolog = Prolog(); prolog.assertz("father(michael,john)")'
 - Prepend pure Prolog commands with '?' or end with '.'

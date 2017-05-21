@@ -25,7 +25,7 @@
 DEBUG = False
 MAJOR = 0
 MINOR = 1
-BUILD = 4
+BUILD = 5
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
