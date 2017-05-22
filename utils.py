@@ -32,6 +32,7 @@ from ctypes import *
 from contextlib import contextmanager
 import functools
 import re
+import pickle, os
 
 
 autoclass = None
@@ -194,3 +195,17 @@ class Hook():
     def set(orig, mod, where):
         orig = where(orig, mod)
         return orig
+
+def load_pickle(f_name):
+    if not os.path.exists(f_name): return None
+    obj = None
+
+    with open(f_name, 'rb') as fo:
+        obj = pickle.load(fo)
+    return obj
+
+def save_pickle(obj, f_name):
+
+    with open(f_name, 'wb') as fo:
+        pickle.dump(obj, fo)
+    return

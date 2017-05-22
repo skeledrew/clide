@@ -26,12 +26,9 @@ import pdb
 from pyshell import read_expr, eval_expr
 from fuzzywuzzy import fuzz, process
 import inspect
-from constants import *
-from utils import gen_name, hash_sum, members
-
-
-NO_POT_ACT = 'I am unable to answer to "%s". Can you teach me?'
-BAD_POT_ACT = 'I thought I understood that, but I didn\'t...'
+from utils import gen_name, hash_sum, members, save_pickle, load_pickle
+import os, time
+import constants
 
 
 class Mind():
@@ -57,16 +54,21 @@ Longer explanation that may take multiple lines...
 .. changes:: <text>
 '''
 
-    def __init__(self):
+    def __init__(self, persist=True, name='main_mind'):
         self._timeline = []
         self._thots = {}
         self._index = {}
         self._word_net = {}
+        if persist and os.path.exists(constants.MEMORY_PATH): self._recall(name)
+        if persist and not os.path.exists(constants.MEMORY_PATH): os.makedirs(constants.MEMORY_PATH)
+        self._persist = persist
+        self._name = name
 
     def register(self, thot):
         self._timeline.append(thot.t_name)
         self._thots[thot.t_name] = thot
         self._index[thot.t_content()] = thot.t_name
+        self._commit(thot)
 
     def get_thots(self, chosen=[]):
         # get a list of thoughts, all or opt by name
@@ -83,11 +85,30 @@ Longer explanation that may take multiple lines...
     def _ponder(self):
         pass
 
-    def _remember(self):
-        pass
+    def _remember(self, t_names):
+        if self._persist: return [load_pickle('%s%s.obj' % (constants.MEMORY_PATH, t_name)) for t_name in t_names]
 
     def _imagine(self):
         pass
+
+    def _commit(self, thot=None):
+        if self._persist and thot: save_pickle(thot, '%s%s.obj' % (constants.MEMORY_PATH, thot.t_name))
+        if self._persist and not thot: save_pickle(self, '%s%s.obj' % (constants.MEMORY_PATH, self._name))
+        return
+
+    def _recall(self, name):
+        # init with stored mind
+        mind = load_pickle('%s%s.obj' % (constants.MEMORY_PATH, name))
+
+        if mind:
+            self._timeline = mind._timeline
+            self._thots = mind._thots
+            self._index = mind._index
+            self._word_net = mind._word_net
+        return
+
+    def save(self):
+        self._commit()
 
 class Thought():
     '''Documentation template for classes and functions.
@@ -112,7 +133,7 @@ Longer explanation that may take multiple lines...
 .. changes:: <text>
 '''
 
-    def __init__(self, mind=None):
+    def __init__(self, mind=None, persist=True):
         self._done = False
         self._concs = {}
         self._attribs = []
@@ -133,6 +154,13 @@ Longer explanation that may take multiple lines...
         # process a directive
         self._head = self._content.pop(0)[:-3].strip()
         self._body = self._content
+        self._needsUnify = False
+
+        for word in self._head.split(' '):
+
+            if ord(word[0]) in range(65, 91):
+                self._needsUnify = True
+                break
         ## do some meta ops with kdb
         return 'I just learned something new!'
 
@@ -155,7 +183,7 @@ Longer explanation that may take multiple lines...
         m_stats['top%s' % max_t] = process.extract(content, t_index, limit=max_t)
         self._match_stats = m_stats
         self._pot_acts = m_stats['top%s' % max_t]
-        if not self._pot_acts: return NO_POT_ACT % content
+        if not self._pot_acts: return constants.NO_POT_ACT % content
         # FIXME: [1] need to check for a viable resolver, or maybe discard the thought
         choice = ''
 
@@ -172,7 +200,7 @@ Longer explanation that may take multiple lines...
                 continue
             # add other undesirable checks
             choice = c[0]
-        if not choice: return NO_POT_ACT % content
+        if not choice: return constants.NO_POT_ACT % content
         self._act = Action(self, choice)
         result = self._act.do()
         return result
@@ -180,6 +208,7 @@ Longer explanation that may take multiple lines...
     def think(self, **kwargs):
         if self._done: return self._results()
         if not 'content' in kwargs: raise Exception('No content found.')
+        self._t_start = time.time()
         self._kwargs = kwargs
 
         if kwargs:
@@ -195,8 +224,9 @@ Longer explanation that may take multiple lines...
         ## finish up
         self._concs['name'] = self.t_name
         self._concs['kwargs'] = kwargs
-        self._dispatch()
         self._done = True
+        self._t_end = time.time()
+        self._dispatch()
         return result
 
     def _dispatch(self):
@@ -234,7 +264,7 @@ class Action():
         body = self._body
         if not body:
             # should be obselete
-            print(BAT_POT_ACT)
+            print(constants.BAT_POT_ACT)
             return None
         head = self._head
         result = None
@@ -242,13 +272,13 @@ class Action():
 
         for cmd in body:
 
-            if cmd.endswith(CONJ):
+            if cmd.endswith(constants.CONJ):
                 # stop processing commands if nothing was returned
                 partial = eval_expr(read_expr(cmd[:-3]))
                 if partial == None: break
                 continue
 
-            elif cmd.endswith(DISJ):
+            elif cmd.endswith(constants.DISJ):
                 # stop processing when something is returned
                 partial = eval_expr(read_expr(cmd[:-3]))
                 if not partial == None: break
