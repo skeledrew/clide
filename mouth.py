@@ -23,7 +23,7 @@
   - PyAudio code template from http://people.csail.mit.edu/hubert/pyaudio/docs/
 '''
 
-from utils import pesh
+from utils import pesh, hash_sum
 import httplib2
 from urllib.parse import urlencode, quote
 import constants
@@ -39,16 +39,20 @@ class Voice():
         self._mary_host = 'localhost'
         self._mary_port = '59125'
         self._cache = {}
-        self._tmp_wav = '/tmp/mary_output_wav.wav'
+        if not os.path.exists(constants.SPOKEN_WORDS_PATH): os.makedirs(constants.SPOKEN_WORDS_PATH)
 
     def mary_alive(self):
         # TODO: check if the service is running
         return True
 
     def speak(self, text):
-        if not self.mary_alive(): return
         self._text = text
-        self._audio = self.mary_tts(text)
+
+        if self._search_cache(text):
+            self.playback(self._cache[text])
+            return
+        if not self.mary_alive(): return
+        self.mary_tts(text)
         self.playback()
         return
 
@@ -69,16 +73,21 @@ class Voice():
 
         #  Decode the wav file or raise an exception if no wav files
         if (resp["content-type"] == "audio/x-wav"):
-            self._c_bytes = BytesIO(content)
-            self._cache[text] = self._c_bytes
-            return content
+            #self._c_bytes = BytesIO(content)
+            self._cache[text] = content #self._c_bytes
+            h_text = hash_sum(text)
+            spch_file = '%sspch-%s.wav' % (constants.SPOKEN_WORDS_PATH, h_text)
+
+            with open(spch_file, 'wb') as so:
+                so.write(content)
 
         else:
             raise Exception(content)
-        return
+        return content
 
     def playback(self, f_name=''):
-        if not f_name: f_name = self._c_bytes
+        if not f_name: f_name = self._cache[self._text]
+        if isinstance(f_name, bytes): f_name = BytesIO(f_name)
         wf = wave.open(f_name, 'rb')
         self._wf = wf
         p = pyaudio.PyAudio()
@@ -103,3 +112,17 @@ class Voice():
             self._pa.terminate()
             return
         return (data, pyaudio.paContinue)
+
+    def _search_cache(self, text):
+        # searches the memory and stored cache
+        if text in self._cache: return True
+        h_text = hash_sum(text)
+        spch_file = '%sspch-%s.wav' % (constants.SPOKEN_WORDS_PATH, h_text)
+
+        if os.path.exists(spch_file):
+
+            with open(spch_file, 'rb') as so:
+                # place into cache
+                self._cache[text] = so.read()
+                return True
+        return False

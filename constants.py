@@ -58,3 +58,4 @@ BAD_POT_ACT = 'I thought I understood that, but I didn\'t...'
 MEMORY = True
 USE_MARY_TTS = True
 MARY_TTS_PATH = '/home/skeledrew/Projects/MaryTTS/marytts-installer-5.2/'
+SPOKEN_WORDS_PATH = 'spoken_words/'
