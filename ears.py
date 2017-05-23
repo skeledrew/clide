@@ -53,7 +53,7 @@ class Ear():
             if adjust: self._recog.adjust_for_ambient_noise(source)
             if report: print(constants.EARS_LISTENING)
             self._audio = self._recog.listen(source)
-        if result: return understand()  # for listen-specific call
+        if result: return self.understand()  # for listen-specific call
 
     def understand(self, audio=None, report=True):
         if report: print(constants.EARS_UNDERSTANDING)
@@ -70,6 +70,10 @@ class Ear():
         except sr.RequestError as e:
             print("Sphinx error: {0}".format(e))
             return None
+
+        for char in self.text:
+            # zap non-accepted
+            if not char in constants.ACCEPTED: self._text = self._text.replace(char, '')
         return self._text
 
     def answer(self, *args, report=True):

@@ -65,6 +65,7 @@ Longer explanation that may take multiple lines...
         self._name = name
 
     def register(self, thot):
+        if not thot._body: return  # register only directives, for now
         self._timeline.append(thot.t_name)
         self._thots[thot.t_name] = thot
         self._index[thot.t_content()] = thot.t_name
@@ -106,6 +107,15 @@ Longer explanation that may take multiple lines...
             self._index = mind._index
             self._word_net = mind._word_net
         return
+
+    def _forget(self, thots=[]):
+
+        if not thots:
+            sh.rm('%s*.obj' % constants.MEMORY_PATH)
+            return
+
+        for thot in thots:
+            sh.rm('%s%s.obj' % (constants.MEMORY_PATH, thot))
 
     def save(self):
         self._commit()

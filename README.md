@@ -19,6 +19,7 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - python3
 - libdbus-glib-1-dev (for autokey)
 - libpulse-dev
+- marytts
 - -
 - pexpect
 - sh (for Shell access)
@@ -32,6 +33,7 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - PyAudio
 - SpeechRecognition
 - PocketSphinx
+- httplib2
 - likely more...
 
 ### Usage
@@ -68,6 +70,10 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - Start a lual (Listen-Understand-Answer loop)
   - '> Ear(eval_expr).lual()' (uses 'eval_expr' to answer)
   - Say 'finish' (default) to exit the lual
+- Play speech output with Voice (uses MaryTTS aka OpenMary)
+  - '> voice = Voice()'
+  - '> words = "this is so much fun"'
+  - '> voice.speak(words)
 - Fun exercise: add a few directives to, start a lual and call quit in 'clide.init' :D
 - Report errors (I'm sure there are many :))
 

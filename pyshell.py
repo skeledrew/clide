@@ -53,6 +53,7 @@ from fingers import Finger
 from ears import Ear
 from hy_hooks import HyBridge, HyREPL, run_repl
 import constants
+from mouth import Voice
 
 
 autoclass = None
@@ -63,6 +64,7 @@ _tracer = None
 mind = None
 _multiline = False
 prolog = None
+_eval_level = -1
 
 
 def eval_prolog_with_pyswip(cmd):
@@ -210,60 +212,6 @@ def pysh(cmd, debug=False):
     if debug: print('DBG: result = %s' % result)
     return result
 
-def pesh(cmd, out=sys.stdout, shell='/bin/bash', debug=False):
-    # takes command as a string or list
-    result = ''
-    if debug: print('DBG: cmd = \'%s\' & out = %s' % (cmd, str(out)))
-
-    if out == False and type(out) == type(False):
-        # run and forget; need multiprocess to prevent pexpect killing or blocking
-        if debug: print('DBG: running in separate process')
-        proc = Process(target=launch, args=([cmd, shell])).start()
-        return 1
-    child = pexpect.spawnu(shell, ['-c', cmd] if type(cmd) == type('') else cmd)
-
-    if not out == sys.stdout:
-        result = out
-        out = open(TMP_FILE, 'w')
-    child.logfile = out
-    child.expect([pexpect.EOF, pexpect.TIMEOUT])  # command complete and exited
-    #sleep(5)
-
-    if not result == False and child.isalive():
-        # block until the child exits (normal behavior)
-        # otherwise, don't wait for a return
-        print('Waiting for child process...')
-        child.wait()
-
-    if out == sys.stdout:
-        # output went to standard out or not waiting for child to end
-        return
-    out.close()
-    lines = []
-
-    with open(TMP_FILE) as fo:
-
-        for line in fo:
-            lines.append(line.strip())
-    if debug: print('DBG: lines = %s' % str(lines))
-
-    if type(result) == type(0):
-        # get line specified by number, or last line
-        if result < len(lines): return str(lines[result])
-
-    if result == 'all':
-        # all lines
-        return lines
-
-    if type(result) == type(''):
-        # get line specified by pattern
-
-        for line in lines:
-
-            if result in line:  # TODO: make into regex match
-                return line
-        return None
-
 def read_expr(cmd='', debug=False):
     # Reads an expression from stdin and does basic validation
     gotArg = True if cmd else False
@@ -296,10 +244,10 @@ def eval_expr(_expr=None, level=0, debug=False):
     # Recursively evaluates expression as a - nested - list of strings
     expr = None if _expr == None else _expr[:]  # prevent recursive reference hell
     if not expr: return None  # short circuit no input
-    global _multiline
+    global _multiline, _eval_level
     cmd = process_expr(expr, level) #if not multiline else expr
     cmd = cmd.strip()
-    if level == 0 and cmd == QUIT: return QUIT
+    if level == 0 and cmd == constants.QUIT: return constants.QUIT
     result = None
     success = False
     accepted = constants.ACCEPTED
@@ -307,25 +255,27 @@ def eval_expr(_expr=None, level=0, debug=False):
 
     try:
 
-        if cmd.endswith(CONJ) or cmd.endswith(DISJ):
+        if cmd.endswith(constants.CONJ) or cmd.endswith(constants.DISJ):
             # remain in multiline reader mode
 
             if _multiline:
                 #_lines.append(cmd)
-                return cmd
+                _eval_level -= 1
+                return cmd #if level == 0 else '%s%s%s' % (OB, cmd, CB)
                 success = True
 
             else:
                 raise Exception('Expected preceding head sentence denoted by %s' % IFF)
 
-        if _multiline and not (cmd.endswith(CONJ) or cmd.endswith(DISJ)):
+        if _multiline and not (cmd.endswith(constants.CONJ) or cmd.endswith(constants.DISJ)):
             # read last line
             #result = _lines.append(cmd)
             _multiline = False
-            return cmd
+            _eval_level -= 1
+            return cmd #if level == 0 else '%s%s%s' % (OB, cmd, CB)
             success = True
 
-        if cmd.startswith(OB) and cmd.endswith(CB):
+        if cmd.startswith(constants.OB) and cmd.endswith(constants.CB):
             # top level enclosure
             pass
 
@@ -375,7 +325,7 @@ def eval_expr(_expr=None, level=0, debug=False):
             _last_prolog_result = result
             success = True
 
-        if not _multiline and cmd.endswith(IFF):
+        if not _multiline and cmd.endswith(constants.IFF):
             # activate multiline reader mode for pseudolog directive
 
             for char in cmd[:-3]:
@@ -408,37 +358,39 @@ def eval_expr(_expr=None, level=0, debug=False):
             if isAcceptable:
                 result = eval_pseudolog(cmd)
                 success = True
-
-        if success: return str(result)
+        _eval_level -= 1
+        if success: return result
         print('Error: Unable to resolve "%s"; Check the command syntax.' % cmd)
 
     except Exception as e:
         print('ExecError: ' + str(e))
         print('Activating pdb for post-mortem debugging...\n')
         pdb.post_mortem()
+        _eval_level = -1
         return None
 
 def repl(_expr=None, debug=False):
-    global Mind, Thought, Action, mind
+    global Mind, Thought, Action, mind, _eval_level
     Mind = load_module('brain').Mind
     Thought = load_module('brain').Thought
     Action = load_module('brain').Action
     mind = Mind()
     init_env()
-    if USE_HIST in [2, 3] and os.path.exists(HIST_FILE): readline.read_history_file(HIST_FILE)
+    if constants.USE_HIST in [2, 3] and os.path.exists(constants.HIST_FILE): readline.read_history_file(constants.HIST_FILE)
     global autoclass
     global _tracer
 
-    print(WELCOME_MSG)
+    print(constants.WELCOME_MSG)
 
     while True:
-        if USE_TRACE and not _tracer:
+        if constants.USE_TRACE and not _tracer:
             _tracer = debugging.Trace(ignoremods=['debugging', 'utils'], ignoredirs=['/usr', '/home/skeledrew/.local'])
         expr = read_expr()
-        result = eval_expr(expr) if not USE_TRACE else _tracer.runfunc(eval_expr, expr)
-        if result == QUIT: break
-        print(result)
-    if USE_HIST in [1, 3]: readline.write_history_file(HIST_FILE)
+        result = eval_expr(expr) if not constants.USE_TRACE else _tracer.runfunc(eval_expr, expr)
+        if result == constants.QUIT: break
+        if _eval_level < 1: print(str(result))
+    if constants.USE_HIST in [1, 3]: readline.write_history_file(constants.HIST_FILE)
+    if constants.MEMORY: mind.save()
     print('Goodbye cruel world :\'(')
 
 def init_env():
@@ -447,9 +399,9 @@ def init_env():
     readline.parse_and_bind('tab: complete')
     readline.parse_and_bind('set enable-keypad on')
 
-    if not os.path.isfile(INIT_FILE): return
+    if not os.path.isfile(constants.INIT_FILE): return
 
-    with open(INIT_FILE) as fo:
+    with open(constants.INIT_FILE) as fo:
 
         for line in fo:
             cmd = read_expr(line)

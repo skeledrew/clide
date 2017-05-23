@@ -25,7 +25,7 @@
 DEBUG = False
 MAJOR = 0
 MINOR = 1
-BUILD = 6
+BUILD = 7
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
@@ -55,3 +55,6 @@ ACCEPTED = ALPHA_LOWER + ALPHA_UPPER + ' '
 MEMORY_PATH = 'memories/'
 NO_POT_ACT = 'I am unable to answer to "%s". Can you teach me?'
 BAD_POT_ACT = 'I thought I understood that, but I didn\'t...'
+MEMORY = True
+USE_MARY_TTS = True
+MARY_TTS_PATH = '/home/skeledrew/Projects/MaryTTS/marytts-installer-5.2/'
