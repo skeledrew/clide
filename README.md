@@ -34,6 +34,8 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
 - SpeechRecognition
 - PocketSphinx
 - httplib2
+- kivy
+- pygame
 - likely more...
 
 ### Usage

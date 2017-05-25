@@ -359,7 +359,7 @@ def eval_expr(_expr=None, level=0, debug=False):
                 result = eval_pseudolog(cmd)
                 success = True
         _eval_level -= 1
-        if success: return result
+        if success: return result if _eval_level > 0 else str(result) + '\n'
         print('Error: Unable to resolve "%s"; Check the command syntax.' % cmd)
 
     except Exception as e:

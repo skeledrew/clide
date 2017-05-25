@@ -45,8 +45,9 @@ class Voice():
         # TODO: check if the service is running
         return True
 
-    def speak(self, text):
+    def speak(self, text, voice='dfki-prudence-hsmm'):
         self._text = text
+        self._voice = voice if voice else constants.DEFAULT_MARY_VOICE
 
         if self._search_cache(text):
             self.playback(self._cache[text])
@@ -60,7 +61,7 @@ class Voice():
         query_hash = {"INPUT_TEXT": text,
                       "INPUT_TYPE": "TEXT",
                       "LOCALE": "en_US",
-                      "VOICE": "cmu-slt-hsmm", # Voice informations  (need to be compatible)
+                      "VOICE": self._voice, # Voice informations  (need to be compatible)
                       "OUTPUT_TYPE": "AUDIO",
                       "AUDIO": "WAVE", # Audio informations (need both)
                       }
@@ -126,3 +127,10 @@ class Voice():
                 self._cache[text] = so.read()
                 return True
         return False
+
+    def _check_install(self, ver='5.2'):
+        # download and setup if not found
+        if not os.path.exists(constants.MARY_TTS_PATH): os.makedirs(constants.MARY_TTS_PATH)
+        ##get latest release at <https://github.com/marytts/marytts/releases>
+        ##unzip and run script
+        ##update path
