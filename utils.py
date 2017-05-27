@@ -228,7 +228,7 @@ def pesh(cmd, out=sys.stdout, shell='/bin/bash', debug=False):
         result = out
         out = open(constants.TMP_FILE, 'w')
     child.logfile = out
-    child.expect([pexpect.EOF, pexpect.TIMEOUT])  # command complete and exited
+    child.expect([pexpect.EOF, pexpect.TIMEOUT], timeout=None)  # command complete and exited
     #sleep(5)
 
     if not result == False and child.isalive():

@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/pytho@n3
 
 # This file is part of ClIDE
 # ClIDE - A live-modifiable command-line IDE that can accept commands as pseudocode  
@@ -65,6 +65,7 @@ mind = None
 _multiline = False
 prolog = None
 _eval_level = -1
+_last_result = None
 
 
 def eval_prolog_with_pyswip(cmd):
@@ -217,11 +218,11 @@ def read_expr(cmd='', debug=False):
     gotArg = True if cmd else False
 
     while True:
-        if not cmd: cmd = input(PROMPT)
+        if not cmd: cmd = input(constants.PROMPT)
         cmd = cmd.strip()
         if not gotArg and cmd == '': continue
-        if cmd[0] == COMMENT: return None
-        cmd = nestedExpr(OB, CB).parseString('%s%s%s' % (OB, cmd, CB)).asList()[0]  # parse into list
+        if cmd[0] == constants.COMMENT: return None
+        if not _multiline: cmd = nestedExpr(constants.OB, constants.CB).parseString('%s%s%s' % (constants.OB, cmd, constants.CB)).asList()[0]  # parse into list, avoid processing directive body
         break
     return cmd
 
@@ -308,11 +309,9 @@ def eval_expr(_expr=None, level=0, debug=False):
 
         if not success and cmd[0] == '$':
             # execute as Shell
-            result = pysh(cmd[1:].strip())
-            global _last_shell_result
-            _last_shell_result = result
+            #result = pysh(cmd[1:].strip())
+            result = '\n'.join(pesh(cmd[1:].strip(), 'all'))
             #result = '"%s"' % result  # should fix embedded issue
-            #if debug: print('DBG: shell result = %s' % result)
             success = True
 
         if not success and cmd[0] == '?' or cmd[-1] == '.':
@@ -359,7 +358,9 @@ def eval_expr(_expr=None, level=0, debug=False):
                 result = eval_pseudolog(cmd)
                 success = True
         _eval_level -= 1
-        if success: return result if _eval_level > 0 else str(result) + '\n'
+        global _last_result
+        if not result == None: _last_result = result
+        if success: return result if _eval_level > 0 else str(result)
         print('Error: Unable to resolve "%s"; Check the command syntax.' % cmd)
 
     except Exception as e:
@@ -388,7 +389,7 @@ def repl(_expr=None, debug=False):
         expr = read_expr()
         result = eval_expr(expr) if not constants.USE_TRACE else _tracer.runfunc(eval_expr, expr)
         if result == constants.QUIT: break
-        if _eval_level < 1: print(str(result))
+        if _eval_level < 1 and not result == None: print(str(result))
     if constants.USE_HIST in [1, 3]: readline.write_history_file(constants.HIST_FILE)
     if constants.MEMORY: mind.save()
     print('Goodbye cruel world :\'(')

@@ -1,7 +1,7 @@
 # This file is part of ClIDE
-# ClIDE - A live-modifiable command-line IDE that can accept commands as pseudocode  
+# ClIDE - A live-modifiable command-line IDE that can accept commands as pseudocode
 
-# @author Andrew Phillips  
+# @author Andrew Phillips
 # @copyright 2017 Andrew Phillips <skeledrew@gmail.com>
 
 # ClIDE is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@
 DEBUG = False
 MAJOR = 0
 MINOR = 1
-BUILD = 7
+BUILD = 8
 OB = '<{'
 CB = '}>'
 QUIT = 'quit...'
@@ -60,3 +60,6 @@ USE_MARY_TTS = True
 MARY_TTS_PATH = '/home/skeledrew/Projects/MaryTTS/marytts-installer-5.2/'
 SPOKEN_WORDS_PATH = 'spoken_words/'
 DEFAULT_MARY_VOICE = 'cmu-slt-hsmm'
+LAST_RESULT = 'LastResult'
+UNIFY_ERROR = 'Cannot unify; "%s" is already resolved'
+CURRENT_COMMAND = 'CurrentCommand'

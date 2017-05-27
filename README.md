@@ -76,6 +76,12 @@ Hy, Shell, Java and even natural (yes, it can handle NL sentences with a little 
   - '> voice = Voice()'
   - '> words = "this is so much fun"'
   - '> voice.speak(words)
+- Create unifiable directives (NB: this example searches from root!)
+  - search for File in ListOfFolders :=>
+  - '> ''.join([' |grep %s' % folder for folder in "<{ListOfFolders}>".split(' ')]) + ' |grep %s' % "<{File}>" &&&'
+  - '$ find /<{> _last_result}> &&&'
+  - '> [path for path in _last_result.split('\n') if not re.compile('^find[\S\s]+denied$').match(path)]'
+  - 'search for clide in skeledrew Projects'
 - Fun exercise: add a few directives to, start a lual and call quit in 'clide.init' :D
 - Report errors (I'm sure there are many :))
 
